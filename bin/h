@@ -1,0 +1,333 @@
+#!/usr/bin/env ruby
+
+require 'awesome_print'
+
+class SubcommandMatcher
+  class << self
+    def from(hash)
+      new(hash)
+    end
+  end
+
+  attr_accessor :subcommands
+  attr_accessor :subcommand_map
+  attr_accessor :subcommand_names
+  def initialize(hash_or_array)
+    @subcommand_map = hash_or_array
+    @subcommands = hash_or_array.keys
+    @subcommand_names = hash_or_array.keys
+  end
+
+  def subcommand_variations
+    subcommands.inject({}) do |h,name|
+      h.merge( name => name.chars.reverse.inject([]){|a,c| a.map{|tail| c + tail }.push(c) } )
+    end
+  end
+
+  def uniq_variations
+    subcommand_variations.inject({}){|vars,(name,list)|
+      duplicate_variations  = (subcommand_names - [name]).flat_map(&subcommand_variations.method(:fetch))
+      duplicate_variations -= [name]
+      (list - duplicate_variations).each do |variation|
+        vars.merge! variation => subcommand_map[name]
+      end
+      vars
+    }
+  end
+
+  def match(cmd)
+    uniq_variations[cmd]
+  end
+end
+
+
+
+class Subcommandable
+  class << self
+    attr_accessor :subcommand
+
+    def print_subcommand_list
+      puts <<-MESSAGE.lines.map{|l| l.chomp.sub(/^\s{8}/, '') }
+        ERROR: Subcommand required.
+
+        Possible subcommands:
+          #{subcommand_names.join("\n  ")}
+      MESSAGE
+    end
+
+    def run(args=argv)
+      @args = args || argv
+      @subcommand ||= args.shift
+
+      if @subcommand.nil?
+        if @no_subcommand.present?
+          @no_subcommand.call
+          exit 0
+        else
+          print_subcommand_list
+          exit 1
+        end
+      end
+
+      @runner ||= subcommand_matcher.match(@subcommand)
+
+      if @runner
+        @runner.call
+        exit 0
+      end
+
+      if @dynamic_subcommand
+        @dynamic_subcommand.call
+        exit 0
+      end
+
+      puts format('Runner/handler not found for the "%s" subcommand', subcommand)
+      exit 1
+    end
+
+    def args
+      argv
+    end
+
+    def argv
+      @args ||= ARGV.clone
+    end
+
+    def subcommand_matcher
+      SubcommandMatcher.new subcommands
+    end
+
+    def subcommand_names
+      @subcommands.keys
+    end
+
+    def subcommands
+      @subcommands ||= {}
+    end
+
+    def fallback_runner
+      @fallback_runner ||= Proc.new do
+        puts format('No handler for the "%s" subcommand', subcommand.inspect)
+        exit 1
+      end
+    end
+
+    def default_handler(&block)
+      @no_subcommand = @dynamic_subcommand = block
+    end
+
+    def no_subcommand(&block)
+      @no_subcommand = block
+    end
+
+    def dynamic_subcommand(&block)
+      @dynamic_subcommand = block
+    end
+
+    def register_subcommand(name, &block)
+      subcommands.merge!( name.to_s => block ).tap{|cmds|
+      # @headers_printed ||= []
+      #unless @headers_printed.include?(self)
+      #  puts
+      #  puts format('Class Name: %s', self.name)
+      #  puts format('Registered subcommand: %s', name)
+      #  puts
+      #  puts format('  Subcommand Names:', name)
+
+      #  @headers_printed.push(self)
+      #end
+      #puts format('    %s', name)
+      }
+    end
+  end
+end
+
+
+class PathEnv
+  class << self
+    def env
+      ENV['PATH']
+    end
+
+    def split
+      env.split(/:+/)
+    end
+
+    def list
+      split.inject([]) do |arr,path|
+        next arr unless File.exist?(path)
+        arr.include?(path) ? arr : arr.push(path)
+      end
+    end
+
+    def absolute_paths
+      split.inject([]) do |list,path|
+        abspath = File.absolute_path(path)
+        next list unless File.exist?(abspath)
+        list.include?(abspath) ? list : list.push(abspath)
+      end
+    end
+
+    def all_glob(pattern='')
+      format '{%s}/%s', list.join(?,), pattern
+    end
+
+    def find(exact_name)
+      Dir[all_glob(exact_name)]
+    end
+
+    def search(name)
+      Dir[all_glob('*%s*' % name)]
+    end
+
+    def fuzzy_search(pattern)
+      Dir[all_glob('*%s*' % name.chars.join(?*))]
+    end
+  end
+end
+
+class DotHash
+  class << self
+    def for(file)
+      new(file)
+    end
+  end
+
+  attr_accessor :official_data
+  attr_accessor :mapped_data
+  def initialize(h)
+    @official_data = h.clone
+    @mapped_data = h.clone
+  end
+
+  def [](key)
+    config_data[key]
+  end
+
+  def []=(key, val)
+    config_data[key] = val
+  end
+
+  def save
+    IO.write(filename, YAML.dump(config_data))
+  end
+
+  def file_exists?
+    File.exist?(filename)
+  end
+
+  def write_empty_config_if_file_is_missing
+    return if file_exists?
+    IO.write filename, YAML.dump({})
+  end
+
+  def method_missing(key, *args)
+    base,operator = key.to_s.split(/(?<=\w)(?=\W*$)/i).push('')
+    matchers = 0.upto(operator.length).flat_map{|len|
+      m = base + operator.slice(0,len)
+      [m, m.to_sym]
+    }
+
+    matching_key = config_data.keys.find{|k| matchers.include?(k) }
+
+    # if it's a getter
+    if args.count == 0
+      config_data[matching_key]
+
+    # if it's a setter and the matched and existing key
+    elsif matching_key
+      config_data.merge! matching_key => args.first
+
+    # if it's a setter and it's a new key
+    else
+      config_data[base] = args.first
+    end
+  end
+end
+
+
+class Git
+  class << self
+    def current_branch
+      `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
+    end
+
+    def status
+      `git status -s`.lines.flat_map{|line|
+        line.chomp.sub(/.../,'').split(/\s+->\s+/)
+      }.uniq
+    end
+
+    def branches
+      `git branch`.lines.flat_map{|line|
+        line.split(/\s+/).select{|b| b[/\w/] }
+      }.uniq
+    end
+
+    def branch_parts(branch=current_branch)
+      parts = branch.split(?/)
+      base = parts.pop
+      prefix = parts.join(?/)
+      DotHash.new({base: base,
+                      has_prefix: parts.count > 0,
+                      prefix: parts.join(?/)})
+    end
+
+    def branch_base
+      branch_parts.base
+    end
+
+    def branch_has_prefix?
+      branch_parts.has_prefix
+    end
+
+    def branch_prefix
+      branch_parts.prefix
+    end
+  end
+end
+
+
+
+class MainCommand < Subcommandable
+
+  def self.editor
+    ENV['EDITOR'] || 'vim'
+  end
+
+  register_subcommand(:edit) {
+    files = args.flat_map{|arg| PathEnv.search(arg) }
+
+    system(editor, *files)
+  }
+
+  register_subcommand(:fix) {
+    unless Object.const_defined?(:FixSubcommand)
+      found = PathEnv.find('new_h-fix')
+      load found.first
+    end
+
+    if Object.const_defined?(:FixSubcommand)
+      FixSubcommand.run(args)
+      exit 0
+    end
+
+    raise Exception, 'Unable to load FixSubcommand'
+  }
+
+  register_subcommand(:git) {
+    GitSubcommand.run(args)
+  }
+
+
+end
+
+class GitSubcommand < Subcommandable
+
+  register_subcommand(:currentbranch){
+    puts format("current branch: %s", Git.current_branch)
+  }
+end
+
+MainCommand.run
+
