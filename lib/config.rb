@@ -1,4 +1,6 @@
-require 'hash_core_ext'
+require 'yaml'
+
+require './lib/hash_ext'
 
 class Config
   attr_accessor :file, :data_path

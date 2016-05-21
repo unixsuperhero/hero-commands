@@ -60,7 +60,7 @@ class Subcommandable
       @subcommand ||= args.shift
 
       if @subcommand.nil?
-        if @no_subcommand.present?
+        if @no_subcommand.is_a?(Proc)
           @no_subcommand.call
           exit 0
         else
@@ -139,6 +139,12 @@ class Subcommandable
       #puts format('    %s', name)
       }
     end
+
+    def load_subcommands_by_prefix(prefix)
+      Dir[File.join(Dir.home, 'subcommands', format('%s-*', prefix))].each do |subcmd|
+        load subcmd
+      end
+    end
   end
 end
 
@@ -186,107 +192,6 @@ class PathEnv
   end
 end
 
-class DotHash
-  class << self
-    def for(file)
-      new(file)
-    end
-  end
-
-  attr_accessor :official_data
-  attr_accessor :mapped_data
-  def initialize(h)
-    @official_data = h.clone
-    @mapped_data = h.clone
-  end
-
-  def [](key)
-    config_data[key]
-  end
-
-  def []=(key, val)
-    config_data[key] = val
-  end
-
-  def save
-    IO.write(filename, YAML.dump(config_data))
-  end
-
-  def file_exists?
-    File.exist?(filename)
-  end
-
-  def write_empty_config_if_file_is_missing
-    return if file_exists?
-    IO.write filename, YAML.dump({})
-  end
-
-  def method_missing(key, *args)
-    base,operator = key.to_s.split(/(?<=\w)(?=\W*$)/i).push('')
-    matchers = 0.upto(operator.length).flat_map{|len|
-      m = base + operator.slice(0,len)
-      [m, m.to_sym]
-    }
-
-    matching_key = config_data.keys.find{|k| matchers.include?(k) }
-
-    # if it's a getter
-    if args.count == 0
-      config_data[matching_key]
-
-    # if it's a setter and the matched and existing key
-    elsif matching_key
-      config_data.merge! matching_key => args.first
-
-    # if it's a setter and it's a new key
-    else
-      config_data[base] = args.first
-    end
-  end
-end
-
-
-class Git
-  class << self
-    def current_branch
-      `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
-    end
-
-    def status
-      `git status -s`.lines.flat_map{|line|
-        line.chomp.sub(/.../,'').split(/\s+->\s+/)
-      }.uniq
-    end
-
-    def branches
-      `git branch`.lines.flat_map{|line|
-        line.split(/\s+/).select{|b| b[/\w/] }
-      }.uniq
-    end
-
-    def branch_parts(branch=current_branch)
-      parts = branch.split(?/)
-      base = parts.pop
-      prefix = parts.join(?/)
-      DotHash.new({base: base,
-                      has_prefix: parts.count > 0,
-                      prefix: parts.join(?/)})
-    end
-
-    def branch_base
-      branch_parts.base
-    end
-
-    def branch_has_prefix?
-      branch_parts.has_prefix
-    end
-
-    def branch_prefix
-      branch_parts.prefix
-    end
-  end
-end
-
 
 
 class MainCommand < Subcommandable
@@ -315,19 +220,13 @@ class MainCommand < Subcommandable
     raise Exception, 'Unable to load FixSubcommand'
   }
 
-  register_subcommand(:git) {
-    GitSubcommand.run(args)
-  }
+  # register_subcommand(:git) {
+  #   GitSubcommand.run(args)
+  # }
 
 
 end
 
-class GitSubcommand < Subcommandable
-
-  register_subcommand(:currentbranch){
-    puts format("current branch: %s", Git.current_branch)
-  }
-end
-
+MainCommand.load_subcommands_by_prefix('h')
 MainCommand.run
 
