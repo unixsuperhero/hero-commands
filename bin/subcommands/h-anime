@@ -9,7 +9,21 @@ class AnimeSubcommand < Subcommandable
     Dir.chdir(File.join(Dir.home, 'Downloads', 'finished'))
 
     FindPatternsInFilenames.run(args)
+    exit 0
     # organize new/unsorted episodes into their series' subfolder
+  }
+
+  register_subcommand(:init){
+    IO.write('watched.grep', 'watched.grep' + "\n") unless File.exist?('watched.grep')
+    system(ENV['EDITOR'] || 'vim', 'watched.grep')
+    exit 0
+  }
+
+  register_subcommand(:show_next_episode){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -vf watched.grep | head -1'))
+    exit 0
+    # open the next episode and add it to the watched_episodes.grep file
   }
 
   register_subcommand(:next_episode){
@@ -20,7 +34,24 @@ class AnimeSubcommand < Subcommandable
     # list all the series that have folders
   }
 
+  register_subcommand(:all_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | grep -v watched.grep'))
+    exit 0
+    # list the episodes that haven't been watched yet
+  }
+
+  register_subcommand(:watched_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -f watched.grep | grep -v watched.grep'))
+    exit 0
+    # list the episodes that haven't been watched yet
+  }
+
   register_subcommand(:unwatched_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -vf watched.grep'))
+    exit 0
     # list the episodes that haven't been watched yet
   }
 end
