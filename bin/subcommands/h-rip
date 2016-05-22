@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+
+class RipSubcommand < Subcommandable
+  default_handler{
+    puts format('Ripper Plugins:')
+    puts format('  %s', RipperPlugin.plugins.join("\n  "))
+
+    puts format('subcommand: %s', subcommand)
+    puts format('args: %s', args)
+    puts format('Matching Plugin: %s', RipperPlugin.plugins.find{|kls| kls.matches?(subcommand) })
+    puts
+  }
+
+  register_subcommand(:update) {
+  }
+end
+
+MainCommand.register_subcommand(:rip) {
+  RipSubcommand.run(MainCommand.args)
+}
+
+class RipperPlugin
+  class << self
+    def inherited(base)
+      plugins.push(base)
+    end
+
+    def plugins
+      @plugins ||= []
+    end
+
+    def matches_if(&block)
+      @matches_if = block
+    end
+
+    def matches?(*args)
+      return false unless @matches_if
+      @matches_if.call(*args)
+    end
+  end
+end
+
+class MangaparkRipper < RipperPlugin
+  matches_if{|url|
+    [
+      /mangapark[.]me/i,
+    ].any?{|pattern| url[pattern] }
+  }
+
+  class << self
+    def run(url, destination=nil)
+      # html = download_html(url)
+      # pages = download_pages_in_chapter(html, destination)
+      # next_url = get_next_url
+      # run(next_url, destination)
+    end
+  end
+end
