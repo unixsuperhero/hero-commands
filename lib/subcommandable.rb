@@ -51,13 +51,19 @@ class Subcommandable
       MESSAGE
     end
 
+    def run_with_hooks(&block)
+      @before_hook.call if @before_hook
+      block.call
+      @after_hook.call if @after_hook
+    end
+
     def run(args=argv)
       @args = args || argv
       @subcommand ||= args.shift
 
       if @subcommand.nil?
         if @no_subcommand.present?
-          @no_subcommand.call
+          run_with_hooks{ @no_subcommand.call }
           exit 0
         else
           print_subcommand_list
@@ -68,12 +74,12 @@ class Subcommandable
       @runner ||= subcommand_matcher.match(@subcommand)
 
       if @runner
-        @runner.call
+        run_with_hooks{ @runner.call }
         exit 0
       end
 
       if @dynamic_subcommand
-        @dynamic_subcommand.call
+        run_with_hooks{ @dynamic_subcommand.call }
         exit 0
       end
 
@@ -108,6 +114,14 @@ class Subcommandable
       end
     end
 
+    def before(&block)
+      @before_hook = block
+    end
+
+    def after(&block)
+      @after_hook = block
+    end
+
     def default_handler(&block)
       @no_subcommand = @dynamic_subcommand = block
     end
@@ -134,6 +148,12 @@ class Subcommandable
       #end
       #puts format('    %s', name)
       }
+    end
+
+    def load_subcommands_by_prefix(prefix)
+      Dir[File.join(Dir.home, 'subcommands', format('%s-*', prefix))].each do |subcmd|
+        load subcmd
+      end
     end
   end
 end

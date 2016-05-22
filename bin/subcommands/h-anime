@@ -1,12 +1,18 @@
 #!/usr/bin/env ruby
 
 class AnimeSubcommand < Subcommandable
+  class << self
+    def downloads_dir
+      File.join(Dir.home, 'Downloads', 'finished')
+    end
+  end
+
   register_subcommand(:example){
     puts format("example subcommand for: %s", self)
   }
 
   register_subcommand(:organize){
-    Dir.chdir(File.join(Dir.home, 'Downloads', 'finished'))
+    Dir.chdir(downloads_dir)
 
     FindPatternsInFilenames.run(args)
     exit 0
@@ -19,6 +25,15 @@ class AnimeSubcommand < Subcommandable
     exit 0
   }
 
+  register_subcommand(:patterns){
+    patterns = Dir['*'].map do |filename|
+      FilenameToGrepConverter.for(filename)
+    end
+
+    puts patterns
+    exit 0
+  }
+
   register_subcommand(:show_next_episode){
     exit 1 unless File.exist?('watched.grep')
     system(format('ls -1 | egrep -vf watched.grep | head -1'))
@@ -28,10 +43,47 @@ class AnimeSubcommand < Subcommandable
 
   register_subcommand(:next_episode){
     # open the next episode and add it to the watched_episodes.grep file
+    next_episode = `ls -1 | grep -vf watched.grep`.lines
+    if next_episode.empty?
+      puts 'ERROR: All episodes watched, nothing left in the queue for this series.'
+      exit 1
+    end
+    next_episode &&= next_episode.first.chomp
+
+    watched_patterns = IO.readlines('watched.grep').map(&:chomp)
+    watched_patterns.push FilenameToGrepConverter.for(next_episode)
+    IO.write('watched.grep', watched_patterns.join("\n"))
+
+    exec('open', next_episode)
   }
 
   register_subcommand(:series){
-    # list all the series that have folders
+    Dir.chdir(downloads_dir)
+
+    folders = Dir['*'].select{|file| File.directory?(file) }
+    puts folders
+    exit 0
+  }
+
+  register_subcommand(:grep_files) {
+    puts Dir['**/watched.grep']
+  }
+
+  register_subcommand(:queue) {
+    Dir.chdir(downloads_dir)
+
+    Dir['*'].select(&File.method(:directory?)).each do |series|
+      Dir.chdir(series)
+      unwatched = `ls -1 | egrep -vf watched.grep`.lines.map(&:chomp)
+
+      unless unwatched.empty?
+        puts
+        puts format('%s/', series)
+        puts unwatched
+      end
+
+      Dir.chdir('..')
+    end
   }
 
   register_subcommand(:all_episodes){
@@ -59,6 +111,14 @@ end
 MainCommand.register_subcommand(:anime) {
   AnimeSubcommand.run(MainCommand.args)
 }
+
+class FilenameToGrepConverter
+  class << self
+    def for(filename)
+      filename.gsub(/[^a-z0-9]+/i, '.*').sub(/^[.][*]/, '').sub(/[.][*]$/i, '')
+    end
+  end
+end
 
 require 'awesome_print'
 
