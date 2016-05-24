@@ -1,14 +1,65 @@
 #!/usr/bin/env ruby
 
-class RipSubcommand < Subcommandable
-  default_handler{
-    puts format('Ripper Plugins:')
-    puts format('  %s', RipperPlugin.plugins.join("\n  "))
+require 'mechanize'
 
-    puts format('subcommand: %s', subcommand)
-    puts format('args: %s', args)
-    puts format('Matching Plugin: %s', RipperPlugin.plugins.find{|kls| kls.matches?(subcommand) })
-    puts
+class RipSubcommand < Subcommandable
+  class << self
+    def ripper_plugin(url)
+      @plugin ||= RipperPlugin.plugin_for(url)
+    end
+  end
+
+  dynamic_subcommand{
+    plugin = ripper_plugin(subcommand)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args.unshift(subcommand)
+    while plugin_args[0]
+      url = plugin.run(*plugin_args)
+      plugin_args[0] = url
+    end
+  }
+
+  register_subcommand(:one) {
+    url = args.first
+    plugin = ripper_plugin(url)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args
+    url = plugin.run(*plugin_args)
+    # while plugin_args[0]
+    #   url = plugin.run(*plugin_args)
+    #   plugin_args[0] = url
+    # end
+  }
+
+  register_subcommand(:all) {
+    url = args.first
+    plugin = ripper_plugin(url)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args
+    while plugin_args[0]
+      url = plugin.run(*plugin_args)
+      plugin_args[0] = url
+    end
+  }
+
+  register_subcommand(:inspect) {
+    plugin = ripper_plugin(args.first)
+    plugin.info_for(args.first)
   }
 
   register_subcommand(:update) {
@@ -37,8 +88,20 @@ class RipperPlugin
       return false unless @matches_if
       @matches_if.call(*args)
     end
+
+    def plugin_for(*args)
+      plugins.find{|plugin| plugin.matches?(*args) }
+    end
+
+    def load_plugins_by_prefix(prefix)
+      Dir[ File.join(Dir.home, 'rippers', format('%s-*', prefix)) ].each do |plugin_file|
+        load plugin_file
+      end
+    end
   end
 end
+
+RipperPlugin.load_plugins_by_prefix('h-rip')
 
 class MangaparkRipper < RipperPlugin
   matches_if{|url|

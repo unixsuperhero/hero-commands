@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'awesome_print'
+require 'pry'
 
 class SubcommandMatcher
   class << self
