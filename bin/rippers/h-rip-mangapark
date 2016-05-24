@@ -1,0 +1,138 @@
+
+class Hash
+  class << self
+    def endless_proc
+      Proc.new do |h,k|
+        h[k] = Hash.new(&endless_proc)
+      end
+    end
+
+    def endless
+      Hash.new(&endless_proc)
+    end
+
+    def with_default(default_value)
+      Hash.new{|h,k| h[k] = default_value.clone }
+    end
+  end
+
+  def select_keys(*keys)
+    dup.select{|k,v| keys.include?(k) }
+  end
+  alias_method :pluck, :select_keys
+  alias_method :slice, :select_keys
+  alias_method :subset, :select_keys
+
+  def deep_merge(other_hash, &block)
+    dup.deep_merge!(other_hash, &block)
+  end
+
+  def deep_merge!(other_hash, &block)
+    other_hash.each_pair do |current_key, other_value|
+      this_value = self[current_key]
+
+      self[current_key] = if this_value.is_a?(Hash) && other_value.is_a?(Hash)
+        this_value.deep_merge(other_value, &block)
+      else
+        if block_given? && key?(current_key)
+          block.call(current_key, this_value, other_value)
+        else
+          other_value
+        end
+      end
+    end
+
+    self
+  end
+end
+
+
+
+
+class MangaparkRipper < RipperPlugin
+  matches_if{|url|
+    [
+      /mangapark[.]me/i,
+    ].any?{|pattern| url[pattern] }
+  }
+
+  class << self
+    def http
+      @http ||= Mechanize.new
+    end
+
+    def info_for(url)
+      page = http.get(url)
+      puts format('link for next page: %s', link_for_next_page(page))
+    end
+
+    def link_for_next_page(page)
+      current_chapter = page.uri.to_s[%r{(?<=/c)\d[^/]*}]
+      current_chapter &&= current_chapter.to_i == current_chapter.to_f ? current_chapter.to_i : current_chapter.to_f
+      next_page_link = page.links.find{|l| l.text[/Next/] }
+      next_page_link &&= next_page_link.resolved_uri.to_s
+      next_page_chapter = next_page_link && next_page_link[%r{(?<=/c)\d[^/]*}]
+      next_page_chapter &&= next_page_chapter.to_i == next_page_chapter.to_f ? next_page_chapter.to_i : next_page_chapter.to_f
+      puts format('current: %s; next: %s', current_chapter, next_page_chapter)
+      return nil unless next_page_chapter
+      return nil if next_page_chapter < current_chapter
+      next_page_link
+    end
+
+    def download_dir(destination=nil)
+      @dir = File.join(Dir.home, 'dl', 'animefreak')
+      @dir = File.join(@dir, destination) if destination
+      @dir.tap{|d|
+        `mkdir -pv "#{d}"` unless File.directory?(d)
+      }
+    end
+
+    def upload2_mirror_link(page)
+      page.body[/http.*?upload2.com.embed.[^'"]+/i]
+    end
+
+    def run(url, destination=nil)
+      destination ||= url[%r{(?<=/manga/)[^/]+}]
+      puts format('download_dir: %s', download_dir(destination))
+      full_destination = download_dir(destination)
+      volume = url[%r{(?<=/v)\d[^/]*}] || '0'
+      full_volume = volume.split(?.).map{|d| format('%03d', d) }.join(?.)
+      chapter = url[%r{(?<=/c)\d[^/]*}] || '0'
+      full_chapter = chapter.split(?.).map{|d| format('%03d', d) }.join(?.)
+      outfile_format = format('%s-%s-%%03d.jpg', full_volume, full_chapter)
+      puts format('outfile_format: %s', outfile_format)
+
+      page = http.get(url)
+      next_page_link = link_for_next_page(page)
+
+      images = page.images_with(class: /\bimg\b/)
+      images.each_with_index{|img,i|
+        outfile = File.join(full_destination, format(outfile_format, i))
+
+        if File.exist?(outfile)
+          puts format('File exists: %s', outfile)
+        else
+          puts format('saving: %s', outfile)
+          img.fetch.save_as(outfile)
+        end
+      }
+
+      if next_page_link
+        return next_page_link
+        run(next_page_link, destination)
+      end
+      #vid = http.get(link)
+      #vid.saveas(outfile)
+      #vid.shutdown
+    end
+
+    def mirrors_from_page(page)
+      page.body.scan(/javascript.loadparts.'([^']+)'/i).flatten.map(&URI.method(:decode)).map{|s| s[/(?<=['"])http[^'"]+(?=['"])/i] }
+    end
+
+    def mp4upload_mirror(mirrors)
+      mirrors.find{|m| m[/mp4upload/i] }
+    end
+  end
+end
+

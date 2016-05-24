@@ -2,6 +2,26 @@ require 'yaml'
 
 require './lib/hash_ext'
 
+class HashHelper
+  class << self
+    def endless_proc
+      Proc.new do |h,k|
+        h[k] = Hash.new(&endless_proc)
+      end
+    end
+
+    def make_endless(hash)
+      hash.tap do |h|
+        h.default_proc = endless_proc
+        h.each do |k,v|
+          next unless v.is_a?(Hash)
+          h[k] = make_endless(v)
+        end
+      end
+    end
+  end
+end
+
 class Config
   attr_accessor :file, :data_path
 
@@ -23,6 +43,7 @@ class Config
 
   def read!
     @data = YAML.load(yaml_data) || {}
+    HashHelper.make_endless(@data)
   end
 
   def read
@@ -63,7 +84,8 @@ class Config
   def data
     return all_data if data_path == []
     data_path.inject(all_data){|result,key|
-      result.merge!(key => result.fetch(key, {}))[key]
+      # result.merge!(key => result.fetch(key, {}))[key]
+      result[key]
     }
   end
 end
