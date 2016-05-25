@@ -14,9 +14,43 @@ class CurlSubcommand < Subcommandable
     @literal_args = @args - @options
   end
 
+  def run
+    print_help_and_exit if asking_for_help?
+
+    puts
+    puts 'Command executed:'
+    puts
+    puts format('  h %s %s', MainCommand.subcommand, MainCommand.args.join(' '))
+    puts
+    puts
+    puts 'Command that would run:'
+    puts
+    puts format('  curl %s %s', converted_options.join(' '), literal_args.join(' '))
+    puts
+  end
+
+  def asking_for_help?
+    %w[ help options ].include? args.first
+  end
+
+  def print_help_and_exit
+    puts
+    puts 'USAGE: h curl [OPTION [OPTION]...] url'
+    puts
+    puts '  OPTION(s):'
+    puts
+    print_format = options_matcher.print_format
+    option_settings.each do |k,v|
+      val = v.is_a?(Proc) ? '=VALUE' : ''
+      puts format('    %s%s', print_format[k], val)
+    end
+    puts
+    exit 1
+  end
+
   def option_settings
     {
-      :headers.inspect => '-I',
+      :headersonly.inspect => '-I',
       :follow.inspect => '-L',
       :saveas.inspect => Proc.new{|opt| _,fn = opt.split(?=, 2); '-o "%s"' % [fn] },
     }
@@ -32,10 +66,6 @@ class CurlSubcommand < Subcommandable
       literal = options_matcher.match(name)
       literal.is_a?(Proc) ? literal.call(opt) : literal
     }
-  end
-
-  def run
-    puts format('curl %s %s', converted_options.join(' '), literal_args.join(' '))
   end
 end
 

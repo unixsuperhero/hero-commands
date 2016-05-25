@@ -172,6 +172,22 @@ class SubcommandMatcher
     }
   end
 
+  def shortest_variations
+    uniq_variations.inject({}){|h,(k,v)|
+      cmd = subcommand_names.find(&->(n){ n.start_with?(k) })
+      cur = h.fetch(cmd, cmd)
+      nxt = k.length < cur.length ? k : cur
+      h.merge(cmd => nxt)
+    }
+  end
+
+  def print_format
+    shortest_variations.map{|full,abbr|
+      optional = full.slice(abbr.length, full.length)
+      { full => format('%s[%s]', abbr, optional) }
+    }.inject(:merge)
+  end
+
   def match(cmd)
     uniq_variations[cmd]
   end
@@ -188,7 +204,7 @@ class Subcommandable
         ERROR: Subcommand required.
 
         Possible subcommands:
-          #{subcommand_names.join("\n  ")}
+          #{subcommand_matcher.print_format.values.join("\n  ")}
       MESSAGE
     end
 
