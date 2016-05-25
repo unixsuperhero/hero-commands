@@ -91,23 +91,13 @@ class MangaparkRipper < RipperPlugin
       page.body[/http.*?upload2.com.embed.[^'"]+/i]
     end
 
-    def run(url, destination=nil)
-      destination ||= url[%r{(?<=/manga/)[^/]+}]
-      puts format('download_dir: %s', download_dir(destination))
-      full_destination = download_dir(destination)
-      volume = url[%r{(?<=/v)\d[^/]*}] || '0'
-      full_volume = volume.split(?.).map{|d| format('%03d', d) }.join(?.)
-      chapter = url[%r{(?<=/c)\d[^/]*}] || '0'
-      full_chapter = chapter.split(?.).map{|d| format('%03d', d) }.join(?.)
-      outfile_format = format('%s-%s-%%03d.jpg', full_volume, full_chapter)
-      puts format('outfile_format: %s', outfile_format)
+    def url_info(url)
+    end
 
-      page = http.get(url)
-      next_page_link = link_for_next_page(page)
-
+    def download_images_for_page(page, outfile_format)
       images = page.images_with(class: /\bimg\b/)
       images.each_with_index{|img,i|
-        outfile = File.join(full_destination, format(outfile_format, i))
+        outfile = format(outfile_format, i)
 
         if File.exist?(outfile)
           puts format('File exists: %s', outfile)
@@ -116,14 +106,32 @@ class MangaparkRipper < RipperPlugin
           img.fetch.save_as(outfile)
         end
       }
+    end
+
+    def outfile_format_from_url(url)
+      volume = url[%r{(?<=/v)\d[^/]*}] || '0'
+      full_volume = volume.split(?.).map{|d| format('%03d', d) }.join(?.)
+      chapter = url[%r{(?<=/c)\d[^/]*}] || '0'
+      full_chapter = chapter.split(?.).map{|d| format('%03d', d) }.join(?.)
+      outfile_format = format('%s-%s-%%03d.jpg', full_volume, full_chapter)
+    end
+
+    def run(url, destination=nil)
+      destination ||= url[%r{(?<=/manga/)[^/]+}]
+      puts format('download_dir: %s', download_dir(destination))
+      full_destination = download_dir(destination)
+      outfile_format = File.join(full_destination, outfile_format_from_url(url))
+      puts format('outfile_format: %s', outfile_format)
+
+      page = http.get(url)
+      next_page_link = link_for_next_page(page)
+
+      download_images_for_page(page, outfile_format)
 
       if next_page_link
         return next_page_link
         run(next_page_link, destination)
       end
-      #vid = http.get(link)
-      #vid.saveas(outfile)
-      #vid.shutdown
     end
 
     def mirrors_from_page(page)

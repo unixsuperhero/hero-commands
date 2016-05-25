@@ -24,6 +24,18 @@ class RipSubcommand < Subcommandable
     end
   }
 
+  register_subcommand(:lightnovels) {
+    plugin = RipperPlugin.plugin_for(args.first)
+    puts format('plugin: %s', plugin)
+    ap return_value: plugin.run(*args)
+  }
+
+  register_subcommand(:ln) {
+    plugin = RipperPlugin.plugin_for(args.first)
+    puts format('plugin: %s', plugin)
+    ap return_value: plugin.run(*args)
+  }
+
   register_subcommand(:one) {
     url = args.first
     plugin = ripper_plugin(url)

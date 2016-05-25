@@ -1,0 +1,183 @@
+class LightNovelsRipper < RipperPlugin
+  matches_if{|url|
+    File.file?(url) && url[/[.]txt$/i]
+  }
+
+  class << self
+    def from_file(file)
+      new(file).tap(&:write)
+    end
+
+    def index_from_instances(instances)
+      data = instances.map(&LightNovelsRipper.method(:instance_link)).join
+      IO.write('index.html', data)
+    end
+
+    def instance_link(i)
+      format('<a href="%<outfile>s">%<outfile>s</a><br>', outfile: File.basename(i.outfile))
+    end
+
+    def run(*files)
+      Dir.chdir(File.dirname(File.absolute_path(files.first)))
+      files.map{|f|
+        fn = File.basename(f)
+        new(f).tap(&:write)
+      }.tap{|instances|
+        index_from_instances(instances)
+      }
+    end
+  end
+
+  attr_reader :file, :data, :splits
+  attr_reader :template
+
+  def initialize(file)
+    @file = file
+    @data = IO.read(file).strip rescue ''
+    @data = @data.gsub(/\n/, 'ZZZ').gsub(/\s+ZZZ/, 'ZZZ').gsub(/ZZZ\s+/, 'ZZZ')
+    # @splits = @data.split(/(?<=\S)\s*\n(\s*\n)+(?=\S)/i)
+    @splits = @data.split(/ZZZZZZZ*/).map{|s| s.gsub(/ZZZ/, "\n<br>\n") } #\s*\n(\s*\n)+(?=\S)/i)
+    @template = outfile_format
+  end
+
+  def generate
+    format @template, {
+      total_count: @splits.count,
+      pad_size: @splits.count.to_s.length,
+      ch1_text: @splits.first,
+      hidden_splits: @splits.map.with_index{|s,i|
+        split_to_div(s, i + 1)
+      }.join("\n\n")
+    }
+  end
+
+  def write
+    IO.write(outfile, generate)
+  end
+
+  def outfile
+    dir = File.dirname(File.absolute_path(file))
+    File.join(dir, File.basename(file).sub(/txt/i, 'html'))
+  end
+
+  def split_to_div(split_text, index)
+    div_format = format('<div id="%%0%dd">%%s</div>', @splits.count.to_s.length)
+    format(div_format, index, split_text)
+  end
+
+  def outfile_format
+    <<-"OUTFILE_FORMAT"
+<html>
+<head>
+  <style type="text/css">
+
+  #container {
+    z-index: 10;
+    position: relative;
+    top: 20vh;
+    width: 25em;
+    margin: 0 auto;
+    font-size: 14pt;
+    line-height: 1.5em;
+  }
+
+  #current_spot {
+    margin: 0 15px;
+  }
+
+  #current_text {
+    margin: 35px 0;
+  }
+
+  #hidden_ids {
+    display: none;
+  }
+  </style>
+
+  <script type="text/javascript">
+    function lpad(num) {
+      numstr = num.toString();
+      padding = '00000000000000000';
+      left = padding.slice(0, %<pad_size>s - numstr.length);
+      return left + numstr;
+    }
+    window.current = 1;
+    window.total = %<total_count>s;
+    window.current_id = lpad(window.current);
+
+    function percentage_complete() {
+      return parseInt( (window.current / window.total) * 100);
+    }
+
+    function set_text(id) {
+      el = document.getElementById(lpad(id));
+      if(el == null) { return false; }
+      window.current = id;
+      window.current_id = lpad(id);
+      document.getElementById('jumplink').href = '#' + window.current_id;
+      document.getElementById('alt_jumplink').href = '#' + window.current_id;
+      document.getElementById('alt_jumplink2').href = '#' + window.current_id;
+      label = document.getElementById('current_id')
+      label.innerText = window.current;
+      text = document.getElementById('current_text')
+      text.innerHTML = document.getElementById(window.current_id).innerHTML;
+      setTimeout(function() {
+        document.getElementById('prevlink').href = '#' + lpad(window.current - 1);
+        document.getElementById('nextlink').href = '#' + lpad(window.current + 1);
+        document.getElementById('alt_prevlink').href = '#' + lpad(window.current - 1);
+        document.getElementById('alt_nextlink').href = '#' + lpad(window.current + 1);
+        document.getElementById('percentage').innerText = percentage_complete();
+      }, 500);
+
+      return true;
+    }
+
+    function jump_to_split() {
+      input = prompt('Enter the number of the split:');
+      num = parseInt(input);
+      return set_text(num);
+    }
+
+    function prev_split() {
+      return set_text(window.current - 1);
+    }
+
+    function next_split() {
+      return set_text(window.current + 1);
+    }
+  </script>
+</head>
+<body>
+
+  <div id="container">
+    <a href="index.html">Index/Table of Contents</a>
+    <br>
+    <br>
+    <a id="prevlink" href="#0001" accesskey="h" onclick="return prev_split();">&lt;- Prev</a>
+    <span id="current_spot">
+    <span id="current_id">1</span> / %<total_count>s (<span id="percentage">0</span>%%)
+    </span>
+    <a id="nextlink" accesskey="l" href="#0002" onclick="return next_split();">Next -&gt;</a><br>
+    <a id="jumplink" href="#0001" accesskey="j" onclick="return jump_to_split();">Jump to Split</a><br>
+    <div id="current_text">
+      %<ch1_text>s
+    </div>
+  </div>
+
+<div id="hidden_ids">
+
+
+    <a id="alt_prevlink" href="#0001" accesskey="p" onclick="return prev_split();">&lt;- Prev</a>
+    <a id="alt_nextlink" accesskey="n" href="#0002" onclick="return next_split();">Next -&gt;</a><br>
+    <a id="alt_jumplink" href="#0001" accesskey="G" onclick="return jump_to_split();">Jump to Split</a><br>
+    <a id="alt_jumplink2" href="#0001" accesskey="g" onclick="return jump_to_split();">Jump to Split</a><br>
+
+
+
+    %<hidden_splits>s
+
+</body>
+</html>
+    OUTFILE_FORMAT
+  end
+end

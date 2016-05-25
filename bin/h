@@ -67,7 +67,7 @@ class Subcommandable
       @subcommand ||= args.shift
 
       if @subcommand.nil?
-        if @no_subcommand.present?
+        if @no_subcommand.is_a?(Proc)
           run_with_hooks{ @no_subcommand.call }
           exit 0
         else
