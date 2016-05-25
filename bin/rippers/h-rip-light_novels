@@ -19,6 +19,23 @@ class LightNovelsRipper < RipperPlugin
 
     def run(*files)
       Dir.chdir(File.dirname(File.absolute_path(files.first)))
+      all_in_one = new('all.txt')
+
+      splits = files.map{|f|
+        fn = File.basename(f)
+        new(f).tap{|inst|
+          all_in_one.markers.push([f, inst.splits.count])
+        }
+      }.map(&:splits).inject(:concat)
+
+      all_in_one.tap{|all|
+        all.splits = splits
+        all.write
+      }
+    end
+
+    def old_run(*files)
+      Dir.chdir(File.dirname(File.absolute_path(files.first)))
       files.map{|f|
         fn = File.basename(f)
         new(f).tap(&:write)
@@ -28,20 +45,48 @@ class LightNovelsRipper < RipperPlugin
     end
   end
 
-  attr_reader :file, :data, :splits
+  attr_reader :file
   attr_reader :template
 
-  def initialize(file)
+  attr_writer :data, :splits, :markers
+
+  def initialize(file='/dev/null')
     @file = file
-    @data = IO.read(file).strip rescue ''
-    @data = @data.gsub(/\n/, 'ZZZ').gsub(/\s+ZZZ/, 'ZZZ').gsub(/ZZZ\s+/, 'ZZZ')
     # @splits = @data.split(/(?<=\S)\s*\n(\s*\n)+(?=\S)/i)
-    @splits = @data.split(/ZZZZZZZ*/).map{|s| s.gsub(/ZZZ/, "\n<br>\n") } #\s*\n(\s*\n)+(?=\S)/i)
     @template = outfile_format
+  end
+
+  def markers
+    @markers ||= []
+  end
+
+  def markers_text
+    return '' if markers.empty?
+    pos = 1
+    markers.map{|f,c|
+      format('<b>%s:</b> %d<br>', f.sub('.txt', ''), pos).tap{
+        pos += c
+      }
+    }.join("\n")
+  end
+
+  def data
+    @data ||= begin
+      contents = IO.read(file).strip rescue ''
+    end
+  end
+
+  def splitable_data
+    @splitable ||= data.gsub(/\n/, 'ZZZ').gsub(/\s+ZZZ/, 'ZZZ').gsub(/ZZZ\s+/, 'ZZZ')
+  end
+
+  def splits
+    @splits ||= splitable_data.split(/ZZZZZZZ*/).map{|s| s.gsub(/ZZZ/, "\n<br>\n") } #\s*\n(\s*\n)+(?=\S)/i)
   end
 
   def generate
     format @template, {
+      markers_text: markers_text,
       total_count: @splits.count,
       pad_size: @splits.count.to_s.length,
       ch1_text: @splits.first,
@@ -71,13 +116,33 @@ class LightNovelsRipper < RipperPlugin
 <head>
   <style type="text/css">
 
+  a {
+    color: blue;
+  }
+
+  #current_id {
+    /*
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.1);
+    */
+    /* color: rgba(0, 200, 10, 0.901961); */
+    /* text-shadow: 1px 1px 2px black; */
+
+    font-size: 24pt;
+    font-weight: bold;
+    padding: 2px 8px;
+    letter-spacing: 3px;
+    color: red;
+    text-shadow: 1px 1px 2px green;
+  }
+
   #container {
     z-index: 10;
     position: relative;
-    top: 20vh;
-    width: 25em;
+    top: 10vh;
+    width: 450px;
     margin: 0 auto;
-    font-size: 14pt;
+    font-size: 16pt;
     line-height: 1.5em;
   }
 
@@ -94,7 +159,41 @@ class LightNovelsRipper < RipperPlugin
   }
   </style>
 
+  <script type="text/javascript" src="/Users/hiro/assets/js/jquery2.js"></script>
   <script type="text/javascript">
+
+    $(document).ready(function(){
+      hash = window.location.hash;
+      if(window.location.hash == null) { return; }
+      id = hash.replace(/^#0*/,'');
+      id = parseInt(id);
+      set_text(id);
+    })
+
+    $(document).on('keypress', function(e) {
+      actions = {
+        /*"g":*/ 103: function() { jump_to_split(); },
+        /*"h":*/ 104: function() { prev_split(); },
+        /*"j":*/ 106: function() { jump_to_split(); },
+        /*"l":*/ 108: function() { next_split(); },
+        /*"m":*/ 109: function() { toggle_markers(); },
+        /*"n":*/ 110: function() { next_split(); },
+        /*"p":*/ 112: function() { prev_split(); },
+        /*"s":*/ 115: function() { toggle_shortcuts(); },
+      }
+      if(actions[e.keyCode]) {
+        actions[e.keyCode]();
+      }
+    });
+
+    function toggle_markers() {
+      $('#markers').toggle();
+    }
+
+    function toggle_shortcuts() {
+      $('#shortcuts').toggle();
+    }
+
     function lpad(num) {
       numstr = num.toString();
       padding = '00000000000000000';
@@ -112,24 +211,20 @@ class LightNovelsRipper < RipperPlugin
     function set_text(id) {
       el = document.getElementById(lpad(id));
       if(el == null) { return false; }
+
       window.current = id;
       window.current_id = lpad(id);
-      document.getElementById('jumplink').href = '#' + window.current_id;
-      document.getElementById('alt_jumplink').href = '#' + window.current_id;
-      document.getElementById('alt_jumplink2').href = '#' + window.current_id;
+      window.location.hash = '#' + window.current_id;
+
+      document.getElementById('percentage').innerText = percentage_complete();
+
       label = document.getElementById('current_id')
       label.innerText = window.current;
+
       text = document.getElementById('current_text')
       text.innerHTML = document.getElementById(window.current_id).innerHTML;
-      setTimeout(function() {
-        document.getElementById('prevlink').href = '#' + lpad(window.current - 1);
-        document.getElementById('nextlink').href = '#' + lpad(window.current + 1);
-        document.getElementById('alt_prevlink').href = '#' + lpad(window.current - 1);
-        document.getElementById('alt_nextlink').href = '#' + lpad(window.current + 1);
-        document.getElementById('percentage').innerText = percentage_complete();
-      }, 500);
 
-      return true;
+      return false;
     }
 
     function jump_to_split() {
@@ -150,15 +245,27 @@ class LightNovelsRipper < RipperPlugin
 <body>
 
   <div id="container">
-    <a href="index.html">Index/Table of Contents</a>
+    <a href="#" id="markers_link" href="#" onclick="toggle_markers(); return false;">Toggle Markers</a>
+    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+    <a href="#" id="shortcuts_link" href="#" onclick="toggle_shortcuts(); return false;">Toggle Shortcuts</a>
     <br>
+    <div id="markers" style="display: none;">&nbsp;<br>
+    %<markers_text>s
+    </div>
+    <div id="shortcuts" style="display: none;">&nbsp;<br>
+    &quot;j&quot;, &quot;g&quot; - Jump to Paragraph<br>
+    &quot;p&quot;, &quot;h&quot; - Previous Paragraph<br>
+    &quot;n&quot;, &quot;l&quot; - Next Paragraph<br>
+    &quot;m&quot; - Toggle Markers<br>
+    &quot;s&quot; - Toggle Shortcuts<br>
+    </div>
     <br>
-    <a id="prevlink" href="#0001" accesskey="h" onclick="return prev_split();">&lt;- Prev</a>
+    <a href="#" id="prevlink" accesskey="h" onclick="return prev_split();">&lt;- Prev</a>
     <span id="current_spot">
     <span id="current_id">1</span> / %<total_count>s (<span id="percentage">0</span>%%)
     </span>
-    <a id="nextlink" accesskey="l" href="#0002" onclick="return next_split();">Next -&gt;</a><br>
-    <a id="jumplink" href="#0001" accesskey="j" onclick="return jump_to_split();">Jump to Split</a><br>
+    <a href="#" id="nextlink" accesskey="l" onclick="return next_split();">Next -&gt;</a><br>
+    <a href="#" id="jumplink" accesskey="j" onclick="return jump_to_split();">Jump to Split</a><br>
     <div id="current_text">
       %<ch1_text>s
     </div>
@@ -167,10 +274,10 @@ class LightNovelsRipper < RipperPlugin
 <div id="hidden_ids">
 
 
-    <a id="alt_prevlink" href="#0001" accesskey="p" onclick="return prev_split();">&lt;- Prev</a>
-    <a id="alt_nextlink" accesskey="n" href="#0002" onclick="return next_split();">Next -&gt;</a><br>
-    <a id="alt_jumplink" href="#0001" accesskey="G" onclick="return jump_to_split();">Jump to Split</a><br>
-    <a id="alt_jumplink2" href="#0001" accesskey="g" onclick="return jump_to_split();">Jump to Split</a><br>
+    <a href="#" id="alt_prevlink" accesskey="p" onclick="return prev_split();">&lt;- Prev</a>
+    <a href="#" id="alt_nextlink" accesskey="n" onclick="return next_split();">Next -&gt;</a><br>
+    <a href="#" id="alt_jumplink" accesskey="G" onclick="return jump_to_split();">Jump to Split</a><br>
+    <a href="#" id="alt_jumplink2" accesskey="g" onclick="return jump_to_split();">Jump to Split</a><br>
 
 
 
@@ -181,3 +288,5 @@ class LightNovelsRipper < RipperPlugin
     OUTFILE_FORMAT
   end
 end
+
+# vim: ft=ruby
