@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+class CurlSubcommand < Subcommandable
+  class << self
+    def run(args)
+      new(args).tap(&:run)
+    end
+  end
+
+  attr_reader :args, :options, :literal_args
+  def initialize(args)
+    @args = args.dup
+    @options = args.select{|arg| arg[/^:/] }
+    @literal_args = @args - @options
+  end
+
+  def option_settings
+    {
+      :headers.inspect => '-I',
+      :follow.inspect => '-L',
+      :saveas.inspect => Proc.new{|opt| _,fn = opt.split(?=, 2); '-o "%s"' % [fn] },
+    }
+  end
+
+  def options_matcher
+    SubcommandMatcher.from(option_settings)
+  end
+
+  def converted_options
+    options.map{|opt|
+      name,val = opt.split(?=, 2)
+      literal = options_matcher.match(name)
+      literal.is_a?(Proc) ? literal.call(opt) : literal
+    }
+  end
+
+  def run
+    puts format('curl %s %s', converted_options.join(' '), literal_args.join(' '))
+  end
+end
+
+MainCommand.register_subcommand(:curl) {
+  CurlSubcommand.run(MainCommand.args)
+}
+
+
