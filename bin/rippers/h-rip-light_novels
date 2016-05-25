@@ -63,11 +63,14 @@ class LightNovelsRipper < RipperPlugin
   def markers_text
     return '' if markers.empty?
     pos = 1
+    split_length = @splits.count.to_s.length
+    # marker_format = '<b class="marker_label">%%s:</b> <span class="marker_start">%%0%dd</span> <span class="marker_size">%%0%dd</span><br>' % [split_length, split_length]
+    marker_format = '<b class="marker_label">%s:</b> <span class="marker_start">%s</span> <span class="marker_size">%s</span><br>'
     markers.map{|f,c|
-      format('<b>%s:</b> %d<br>', f.sub('.txt', ''), pos).tap{
+      format(marker_format, f.sub('.txt', ''), pos, c).tap{
         pos += c
       }
-    }.join("\n")
+    }.unshift(format(marker_format, '<u>Chapter</u>', '<u>Starts</u>', '<u>Size</u>')).join("\n")
   end
 
   def data
@@ -120,6 +123,26 @@ class LightNovelsRipper < RipperPlugin
     color: blue;
   }
 
+  .marker_label, .marker_start, .marker_size {
+    font-family: "Courier New";
+    margin: 2px 4px;
+    width: 3.6em;
+    text-align: right;
+    display: inline-block;
+  }
+
+  .marker_label {
+    width: 5em;
+  }
+
+  .shortcut_key {
+    font-family: "Courier New";
+    margin: 2px 4px;
+    width: 2em;
+    text-align: right;
+    display: inline-block;
+  }
+
   #current_id {
     /*
     border: 1px solid rgba(0, 0, 0, 0.6);
@@ -139,7 +162,7 @@ class LightNovelsRipper < RipperPlugin
   #container {
     z-index: 10;
     position: relative;
-    top: 10vh;
+    top: 8vh;
     width: 450px;
     margin: 0 auto;
     font-size: 16pt;
@@ -173,13 +196,30 @@ class LightNovelsRipper < RipperPlugin
     $(document).on('keypress', function(e) {
       actions = {
         /*"g":*/ 103: function() { jump_to_split(); },
-        /*"h":*/ 104: function() { prev_split(); },
-        /*"j":*/ 106: function() { jump_to_split(); },
-        /*"l":*/ 108: function() { next_split(); },
+        /*"j":*/ 106: function() { next_split(); },
+        /*"k":*/ 107: function() { prev_split(); },
         /*"m":*/ 109: function() { toggle_markers(); },
         /*"n":*/ 110: function() { next_split(); },
+        /*"o":*/ 111: function() { jump_to_split(); },
         /*"p":*/ 112: function() { prev_split(); },
         /*"s":*/ 115: function() { toggle_shortcuts(); },
+        /*"t":*/ 116: function() { toggle_markers(); },
+        /*"?":*/  63: function() { toggle_shortcuts(); },
+
+        // "g": 103: function() { jump_to_split(); },
+        // "o": 111: function() { jump_to_split(); },
+
+        // "j": 106: function() { next_split(); },
+        // "n": 110: function() { next_split(); },
+
+        // "k": 107: function() { prev_split(); },
+        // "p": 112: function() { prev_split(); },
+
+        // "m": 109: function() { toggle_markers(); },
+        // "t": 116: function() { toggle_markers(); },
+
+        // "s": 115: function() { toggle_shortcuts(); },
+        // "?":  63: function() { toggle_shortcuts(); },
       }
       if(actions[e.keyCode]) {
         actions[e.keyCode]();
@@ -246,18 +286,17 @@ class LightNovelsRipper < RipperPlugin
 
   <div id="container">
     <a href="#" id="markers_link" href="#" onclick="toggle_markers(); return false;">Toggle Markers</a>
-    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-    <a href="#" id="shortcuts_link" href="#" onclick="toggle_shortcuts(); return false;">Toggle Shortcuts</a>
     <br>
-    <div id="markers" style="display: none;">&nbsp;<br>
+    <div id="markers" style="display: none;">
     %<markers_text>s
     </div>
-    <div id="shortcuts" style="display: none;">&nbsp;<br>
-    &quot;j&quot;, &quot;g&quot; - Jump to Paragraph<br>
-    &quot;p&quot;, &quot;h&quot; - Previous Paragraph<br>
-    &quot;n&quot;, &quot;l&quot; - Next Paragraph<br>
-    &quot;m&quot; - Toggle Markers<br>
-    &quot;s&quot; - Toggle Shortcuts<br>
+    <a href="#" id="shortcuts_link" href="#" onclick="toggle_shortcuts(); return false;">Toggle Shortcuts</a>
+    <div id="shortcuts" style="display: none;">
+    <span class="shortcut_key">&quot;o&quot;, </span><span class="shortcut_key">&quot;g&quot;</span> - Jump to Paragraph<br>
+    <span class="shortcut_key">&quot;p&quot;, </span><span class="shortcut_key">&quot;k&quot;</span> - Previous Paragraph<br>
+    <span class="shortcut_key">&quot;n&quot;, </span><span class="shortcut_key">&quot;j&quot;</span> - Next Paragraph<br>
+    <span class="shortcut_key">&quot;m&quot;, </span><span class="shortcut_key">&quot;t&quot</span> - Toggle Markers<br>
+    <span class="shortcut_key">&quot;s&quot;, </span><span class="shortcut_key">&quot;?&quot</span> - Toggle Shortcuts<br>
     </div>
     <br>
     <a href="#" id="prevlink" accesskey="h" onclick="return prev_split();">&lt;- Prev</a>
