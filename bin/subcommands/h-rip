@@ -46,11 +46,7 @@ class RipSubcommand < Subcommandable
     end
 
     plugin_args = args
-    url = plugin.run(*plugin_args)
-    # while plugin_args[0]
-    #   url = plugin.run(*plugin_args)
-    #   plugin_args[0] = url
-    # end
+    plugin.run(*plugin_args)
   }
 
   register_subcommand(:all) {
