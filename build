@@ -26,6 +26,7 @@ class CommandTemplate
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
       }.map(&:print_children)
+      puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
     end
 
     def endless_proc
