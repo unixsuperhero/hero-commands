@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'erb'
+require 'awesome_print'
 
 class CommandTemplate
   attr_reader :file
@@ -11,10 +12,18 @@ class CommandTemplate
 
   def inject_files(*files)
     files.flatten.map{|filename|
-      next if injected_files.include?(filename)
+      if injected_files.include?(filename)
+        puts format('Already injected: "%s"', filename)
+        next
+      end
+
       injected_files.push(filename)
       render(filename)
     }.compact.join("\n")
+  end
+
+  def injected_files
+    @injected_files ||= []
   end
 
   def render(filename=@file)
@@ -22,7 +31,7 @@ class CommandTemplate
   end
 
   def outfile
-    file.sub(%r{src/}, 'new/').sub(%r{[.]erb}, '').tap{|ofile|
+    file.sub(%r{src/}, 'current/').sub(%r{[.]erb}, '').tap{|ofile|
       puts format('ofile: "%s"', ofile)
       puts format('dirname: "%s"', File.dirname(ofile))
       `mkdir -pv "#{File.dirname(ofile)}"`
@@ -33,6 +42,13 @@ class CommandTemplate
     IO.write(outfile, render)
   end
 end
+
+erb_files = Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb') }
+ap erb_files: erb_files
+
+ap saves: erb_files.first(2).map{|f|
+  { f => CommandTemplate.new(f).save }
+}.inject(:merge)
 
 # vim: ft=ruby
 
