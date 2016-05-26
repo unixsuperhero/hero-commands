@@ -1,1 +1,36 @@
 #!/usr/bin/env ruby
+
+require 'erb'
+
+class CommandTemplate
+  attr_reader :file
+
+  def initialize(file)
+    @file = file
+  end
+
+  def inject_files(*files)
+    files.flatten.map{|filename|
+      next if injected_files.include?(filename)
+      injected_files.push(filename)
+      render(filename)
+    }.compact.join("\n")
+  end
+
+  def render(filename=@file)
+    ERB.new(IO.read(filename)).result(binding)
+  end
+
+  def outfile
+    file.sub(%r{src/}, 'new/').sub(%r{[.]erb}, '').tap{|ofile|
+      `mkdir -pv "#{File.dirname(ofile)}"`
+    }
+  end
+
+  def save
+    IO.write(outfile, render)
+  end
+end
+
+# vim: ft=ruby
+
