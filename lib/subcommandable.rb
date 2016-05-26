@@ -3,6 +3,12 @@ class SubcommandMatcher
     def from(hash)
       new(hash)
     end
+
+    def list_for(str)
+      str.chars.inject([]) do |arr,c|
+        arr.push((arr.last || '') + c)
+      end
+    end
   end
 
   attr_accessor :subcommands
@@ -12,6 +18,27 @@ class SubcommandMatcher
     @subcommand_map = hash_or_array
     @subcommands = hash_or_array.keys
     @subcommand_names = hash_or_array.keys
+  end
+
+  def list_for(str)
+    self.class.list_for(str)
+  end
+
+  def uniqs
+    deletes = []
+    subcommand_map.inject({}){|h,(k,v)|
+      h.tap do |new_map|
+        list_for(k).each do |e|
+          if h.has_key?(e)
+            deletes.push(e) if h[e] != v
+          else
+            new_map.merge!(e => v)
+          end
+        end
+      end
+    }.tap{|uniq_map|
+      deletes.each{|k| uniq_map.delete(k) }
+    }
   end
 
   def subcommand_variations
@@ -31,8 +58,23 @@ class SubcommandMatcher
     }
   end
 
+  def shortest_variations
+    sorted_uniqs = uniqs.keys.sort_by(&:length)
+    subcommand_names.inject({}){|h,name|
+      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)))
+    }
+  end
+
+  def syntax
+    shortest_variations.map{|full,abbr|
+      optional = full.slice(abbr.length, full.length)
+      { full => format('%s[%s]', abbr, optional) }
+    }.inject(:merge)
+  end
+  alias_method :print_format, :syntax
+
   def match(cmd)
-    uniq_variations[cmd]
+    uniqs[cmd]
   end
 end
 
@@ -47,7 +89,7 @@ class Subcommandable
         ERROR: Subcommand required.
 
         Possible subcommands:
-          #{subcommand_names.join("\n  ")}
+          #{subcommand_matcher.syntax.values.join("\n  ")}
       MESSAGE
     end
 
@@ -62,7 +104,7 @@ class Subcommandable
       @subcommand ||= args.shift
 
       if @subcommand.nil?
-        if @no_subcommand.present?
+        if @no_subcommand.is_a?(Proc)
           run_with_hooks{ @no_subcommand.call }
           exit 0
         else
