@@ -46,7 +46,7 @@ end
 erb_files = Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb') }
 ap erb_files: erb_files
 
-ap saves: erb_files.first(2).map{|f|
+ap saves: erb_files.map{|f|
   { f => CommandTemplate.new(f).save }
 }.inject(:merge)
 
