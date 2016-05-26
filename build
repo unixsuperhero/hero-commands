@@ -4,10 +4,66 @@ require 'erb'
 require 'awesome_print'
 
 class CommandTemplate
+  class << self
+    def erb_files
+      Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb').length * -1 }
+    end
+
+    def build_order
+      @pairs ||= erb_files.inject({}){|parents,file|
+        base = File.basename(file, '.erb')
+        erb_files.find{|par|
+          par_base = File.basename(par, '.erb')
+          par_base.length < base.length && base.start_with?(par_base + ?-)
+        }.tap do |parent|
+          parents.merge!(file => parent)
+        end
+        parents
+      }
+    end
+
+    def build_in_order
+      build_order.select{|k,v| v.nil? }.keys.map{|newfile|
+        render_and_add_injected_files(newfile)
+      }.map(&:print_children)
+    end
+
+    def endless_proc
+      Proc.new{|h,k| h[k] = Hash.new(&endless_proc) }
+    end
+
+    def build_levels
+      @levels = Hash.new(&endless_proc)
+    end
+
+    def render_and_add_injected_files(file, injected_files=[])
+      new(file).tap{|cmd|
+        cmd.injected_files.concat injected_files
+        puts format('file: %s; injected_files: %s', file, injected_files.join('; '))
+        cmd.save
+        build_order.select{|k,v|
+          v == file
+        }.keys.each do |newfile|
+          cmd.children.push render_and_add_injected_files(newfile, cmd.injected_files)
+        end
+      }
+    end
+  end
   attr_reader :file
 
   def initialize(file)
     @file = file
+  end
+
+  def print_children
+    puts
+    puts format('file: %s', @file)
+    puts format('  %s', children.map(&:file).join("\n  "))
+    puts
+    children.map(&:print_children)
+  end
+  def children
+    @children ||= []
   end
 
   def inject_files(*files)
@@ -43,12 +99,14 @@ class CommandTemplate
   end
 end
 
-erb_files = Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb') }
-ap erb_files: erb_files
+# erb_files = Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb') }
+ap erb_files: CommandTemplate.erb_files, build_order: CommandTemplate.build_order
 
-ap saves: erb_files.map{|f|
-  { f => CommandTemplate.new(f).save }
-}.inject(:merge)
+CommandTemplate.build_in_order
+
+# ap saves: erb_files.map{|f|
+#   { f => CommandTemplate.new(f).save }
+# }.inject(:merge)
 
 # vim: ft=ruby
 
