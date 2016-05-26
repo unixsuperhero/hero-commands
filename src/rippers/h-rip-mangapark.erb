@@ -1,0 +1,132 @@
+
+class MangaparkRipper < RipperPlugin
+  matches_if{|url|
+    [
+      /mangapark[.]me/i,
+    ].any?{|pattern| url[pattern] }
+  }
+
+  class << self
+    def http
+      @http ||= Mechanize.new
+    end
+
+    def info_for(url)
+      page = http.get(url)
+      puts format('link for next page: %s', link_for_next_page(page))
+    end
+
+    def link_for_next_page(page)
+      current_chapter = page.uri.to_s[%r{(?<=/c)\d[^/]*}]
+      current_chapter &&= current_chapter.to_i == current_chapter.to_f ? current_chapter.to_i : current_chapter.to_f
+      next_page_link = page.links.find{|l| l.text[/Next/] }
+      next_page_link &&= next_page_link.resolved_uri.to_s
+      next_page_chapter = next_page_link && next_page_link[%r{(?<=/c)\d[^/]*}]
+      next_page_chapter &&= next_page_chapter.to_i == next_page_chapter.to_f ? next_page_chapter.to_i : next_page_chapter.to_f
+      puts format('current: %s; next: %s', current_chapter, next_page_chapter)
+      return nil unless next_page_chapter
+      return nil if next_page_chapter < current_chapter
+      next_page_link
+    end
+
+    def download_dir(destination=nil)
+      @dir = File.join(Dir.home, 'dl', 'mangapark')
+      @dir = File.join(@dir, destination) if destination
+      @dir.tap{|d|
+        `mkdir -pv "#{d}"` unless File.directory?(d)
+      }
+    end
+
+    def url_info(url)
+      {
+        'chapter' => chapter_from_url(url),
+        'volume' => volume_from_url(url),
+        'stream' => stream_from_url(url),
+        'url' => url,
+        'finished' => false,
+      }
+    end
+
+    def download_images_for_page(page, outfile_format)
+      images = page.images_with(class: /\bimg\b/)
+      images.each_with_index{|img,i|
+        outfile = format(outfile_format, i)
+
+        if File.exist?(outfile)
+          puts format('File exists: %s', outfile)
+        else
+          puts format('saving: %s', outfile)
+          img.fetch.save_as(outfile)
+        end
+      }
+    end
+
+    def outfile_format_from_url(url)
+      volume = url[%r{(?<=/v)\d[^/]*}] || '0'
+      full_volume = volume.split(?.).map{|d| format('%03d', d) }.join(?.)
+      chapter = url[%r{(?<=/c)\d[^/]*}] || '0'
+      full_chapter = chapter.split(?.).map{|d| format('%03d', d) }.join(?.)
+      outfile_format = format('%s-%s-%%03d.jpg', full_volume, full_chapter)
+    end
+
+    def chapter_from_url(url)
+      ch = url[%r{(?<=/c)[^/]+}] || '0'
+      if ch[/\./]
+        ch.to_f
+      else
+        ch.to_i
+      end
+    end
+
+    def volume_from_url(url)
+      vol = url[%r{(?<=/v)[^/]+}] || '0'
+      if vol[/\./]
+        vol.to_f
+      else
+        vol.to_i
+      end
+    end
+
+    def stream_from_url(url)
+      str = url[%r{(?<=/s)[^/]+}] || '0'
+      if str[/\./]
+        str.to_f
+      else
+        str.to_i
+      end
+    end
+
+
+    def config_for_destination(destination)
+      @config ||= Config.new(File.join(Dir.home, 'rippers.yml'), 'mangapark', destination)
+    end
+
+    def run(url, destination=nil)
+      destination ||= url[%r{(?<=/manga/)[^/]+}]
+      puts format('download_dir: %s', download_dir(destination))
+
+      config = config_for_destination(destination)
+
+      full_destination = download_dir(destination)
+      outfile_format = File.join(full_destination, outfile_format_from_url(url))
+      puts format('outfile_format: %s', outfile_format)
+
+      page = http.get(url)
+      next_page_link = link_for_next_page(page)
+
+      config.merge(url_info(url))
+      config.save
+
+      download_images_for_page(page, outfile_format)
+
+      config.merge('finished' => true)
+      config.save
+
+      if next_page_link
+        return next_page_link
+        run(next_page_link, destination)
+      end
+    end
+  end
+end
+

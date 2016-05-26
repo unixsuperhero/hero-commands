@@ -1,0 +1,113 @@
+#!/usr/bin/env ruby
+
+require 'mechanize'
+
+class RipSubcommand < Subcommandable
+  class << self
+    def ripper_plugin(url)
+      @plugin ||= RipperPlugin.plugin_for(url)
+    end
+  end
+
+  dynamic_subcommand{
+    plugin = ripper_plugin(subcommand)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args.unshift(subcommand)
+    while plugin_args[0].is_a?(String)
+      url = plugin.run(*plugin_args)
+      plugin_args[0] = url
+    end
+  }
+
+  register_subcommand(:lightnovels) {
+    plugin = RipperPlugin.plugin_for(args.first)
+    puts format('plugin: %s', plugin)
+    ap return_value: plugin.run(*args)
+  }
+
+  register_subcommand(:ln) {
+    plugin = RipperPlugin.plugin_for(args.first)
+    puts format('plugin: %s', plugin)
+    ap return_value: plugin.run(*args)
+  }
+
+  register_subcommand(:one) {
+    url = args.first
+    plugin = ripper_plugin(url)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args
+    plugin.run(*plugin_args)
+  }
+
+  register_subcommand(:all) {
+    url = args.first
+    plugin = ripper_plugin(url)
+
+    unless plugin
+      puts format('No Plugin Found for: "%s"', subcommand)
+      exit 1
+    end
+
+    plugin_args = args
+    while plugin_args[0]
+      url = plugin.run(*plugin_args)
+      plugin_args[0] = url
+    end
+  }
+
+  register_subcommand(:inspect) {
+    plugin = ripper_plugin(args.first)
+    plugin.info_for(args.first)
+  }
+
+  register_subcommand(:update) {
+  }
+end
+
+MainCommand.register_subcommand(:rip) {
+  RipSubcommand.run(MainCommand.args)
+}
+
+class RipperPlugin
+  class << self
+    def inherited(base)
+      plugins.push(base)
+    end
+
+    def plugins
+      @plugins ||= []
+    end
+
+    def matches_if(&block)
+      @matches_if = block
+    end
+
+    def matches?(*args)
+      return false unless @matches_if
+      @matches_if.call(*args)
+    end
+
+    def plugin_for(*args)
+      plugins.find{|plugin| plugin.matches?(*args) }
+    end
+
+    def load_plugins_by_prefix(prefix)
+      Dir[ File.join(Dir.home, 'rippers', format('%s-*', prefix)) ].each do |plugin_file|
+        load plugin_file
+      end
+    end
+  end
+end
+
+RipperPlugin.load_plugins_by_prefix('h-rip')
+

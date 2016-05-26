@@ -1,0 +1,298 @@
+#!/usr/bin/env ruby
+
+class AnimeSubcommand < Subcommandable
+  class << self
+    def downloads_dir
+      File.join(Dir.home, 'Downloads', 'finished')
+    end
+  end
+
+  register_subcommand(:example){
+    puts format("example subcommand for: %s", self)
+  }
+
+  register_subcommand(:organize){
+    Dir.chdir(downloads_dir)
+
+    FindPatternsInFilenames.run(args)
+    exit 0
+    # organize new/unsorted episodes into their series' subfolder
+  }
+
+  register_subcommand(:init){
+    IO.write('watched.grep', 'watched.grep' + "\n") unless File.exist?('watched.grep')
+    system(ENV['EDITOR'] || 'vim', 'watched.grep')
+    exit 0
+  }
+
+  register_subcommand(:patterns){
+    patterns = Dir['*'].map do |filename|
+      FilenameToGrepConverter.for(filename)
+    end
+
+    puts patterns
+    exit 0
+  }
+
+  register_subcommand(:show_next_episode){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -vf watched.grep | head -1'))
+    exit 0
+    # open the next episode and add it to the watched_episodes.grep file
+  }
+
+  register_subcommand(:next_episode){
+    # open the next episode and add it to the watched_episodes.grep file
+    next_episode = `ls -1 | grep -vf watched.grep`.lines
+    if next_episode.empty?
+      puts 'ERROR: All episodes watched, nothing left in the queue for this series.'
+      exit 1
+    end
+    next_episode &&= next_episode.first.chomp
+
+    watched_patterns = IO.readlines('watched.grep').map(&:chomp)
+    watched_patterns.push FilenameToGrepConverter.for(next_episode)
+    IO.write('watched.grep', watched_patterns.join("\n"))
+
+    exec('open', next_episode)
+  }
+
+  register_subcommand(:series){
+    Dir.chdir(downloads_dir)
+
+    folders = Dir['*'].select{|file| File.directory?(file) }
+    puts folders
+    exit 0
+  }
+
+  register_subcommand(:grep_files) {
+    puts Dir['**/watched.grep']
+  }
+
+  register_subcommand(:queue) {
+    Dir.chdir(downloads_dir)
+
+    Dir['*'].select(&File.method(:directory?)).each do |series|
+      Dir.chdir(series)
+      unwatched = `ls -1 | egrep -vf watched.grep`.lines.map(&:chomp)
+
+      unless unwatched.empty?
+        puts
+        puts format('%s/', series)
+        puts unwatched
+      end
+
+      Dir.chdir('..')
+    end
+  }
+
+  register_subcommand(:all_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | grep -v watched.grep'))
+    exit 0
+    # list the episodes that haven't been watched yet
+  }
+
+  register_subcommand(:watched_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -f watched.grep | grep -v watched.grep'))
+    exit 0
+    # list the episodes that haven't been watched yet
+  }
+
+  register_subcommand(:unwatched_episodes){
+    exit 1 unless File.exist?('watched.grep')
+    system(format('ls -1 | egrep -vf watched.grep'))
+    exit 0
+    # list the episodes that haven't been watched yet
+  }
+end
+
+MainCommand.register_subcommand(:anime) {
+  AnimeSubcommand.run(MainCommand.args)
+}
+
+class FilenameToGrepConverter
+  class << self
+    def for(filename)
+      filename.gsub(/[^a-z0-9]+/i, '.*').sub(/^[.][*]/, '').sub(/[.][*]$/i, '')
+    end
+  end
+end
+
+require 'awesome_print'
+
+require 'optparse'
+require 'ostruct'
+
+module FindPatternsInFilenames
+  extend self
+
+  attr_accessor :args, :stdinput, :stdoutput
+  def run(args=ARGV.clone, inp=$stdin, out=$stdout)
+    @args, @stdinput, @stdoutput = args, inp, out
+
+    parse_options
+
+    if options.show_help
+      return args.options
+    end
+
+    subdir = args.shift
+    basedir = args.shift
+    parser = DirectoryParser.new(basedir || Dir.pwd, subdir || 'file_groups')
+    parser.parse
+    parser.save_script
+    parser.edit_script
+  end
+
+  def parse_options
+    args.options { |opts|
+      opts.on('-h', '--help', 'print this message') do
+        options.show_help = true
+      end
+    }.parse!
+  end
+
+  def options
+    @options ||= OpenStruct.new.tap do |opts|
+      # default options go here
+      # or pass them to #new as a hash
+
+      opts.show_help = false
+    end
+  end
+
+  # ...helper methods go here...
+
+  class DirectoryParser
+    attr_accessor :dir, :subdir, :file_list, :files, :subdirs, :patterns, :multi_patterns, :pwd
+    def initialize(dir=Dir.pwd, subdir='file_groups')
+      @dir = dir
+      #@subdir = subdir
+      @file_list = Dir[File.join(dir, '*.mkv')]
+      @files = @file_list.select{|f| File.file?(f) }
+      @subdirs = @file_list.select{|f| File.directory?(f) }
+      @patterns = {}
+      @multi_patterns = { patterns: {}, filenames: {} }
+      @pwd = Dir.pwd
+    end
+
+    def parse
+      files.each do |filename|
+        fname = clean_filename filename
+        filename_patterns = split_filename fname
+        if filename_patterns.length == 1
+          pattern = filename_patterns.first
+          patterns[pattern] = patterns.fetch(pattern, []).push(filename)
+        else
+          multi_patterns[:filenames][filename] = filename_patterns.each do |pattern|
+            multi_patterns[:patterns][pattern] = multi_patterns[:patterns].fetch(pattern, []).push(filename)
+          end
+        end
+      end
+    end
+
+    def destination(group)
+      File.join(dir, group)
+    end
+
+    def script
+      @script ||= []
+    end
+
+    def pattern_matches(pattern)
+      main_count = patterns.fetch(pattern, []).length
+      main_count + multi_patterns[:patterns].fetch(pattern, []).length
+    end
+
+    def scriptfile(choose=true, num=0)
+      if choose == true
+        fn = File.join(dir, 'move_files.%s.%03d.sh' % [Time.now.strftime('%Y-%m-%d'), num])
+        puts 'fn => "%s"' % fn
+        return fn if num > 10
+        fn = scriptfile(true, num + 1) if File.exist?(fn)
+        @scriptfile = fn
+      else
+        @scriptfile
+      end
+    end
+
+    def save_script
+      patterns.each do |pattern,filenames|
+        dest = destination(pattern)
+
+        script << format('mkdir -pv "%s"', dest)
+
+        filenames.each do |filename|
+          script << format('mv -v "%s" "%s"/', filename, dest)
+        end
+        script << ''
+      end
+
+      script << '# --- FILES WITH MULTIPLE PATTERNS ---'
+
+      added_patterns = []
+      multi_patterns[:filenames].each do |filename,patterns|
+        if patterns.all?{|pattern| added_patterns.any?{|added_pattern| added_pattern == pattern } }
+          script << '' unless script.last == '' || script.last[/ALREADY IN SCRIPT/]
+          script << format('# %s # GROUPS ALREADY IN SCRIPT', filename)
+          next
+        end
+
+        script << ''
+        script << format('# %s', filename)
+        patterns.each do |pattern|
+          script << format('# (%3d) %s', pattern_matches(pattern), pattern)
+        end
+
+        script << ''
+        patterns.each do |pattern|
+          dest = destination(pattern)
+          if added_patterns.any?{|added_pattern| added_pattern == pattern }
+            script << '' unless script.last == '' || script.last[/ALREADY IN SCRIPT/]
+            script << format('  # "%s" ALREADY IN SCRIPT', dest)
+            next
+          end
+
+          added_patterns.push(pattern)
+          script << ''
+          script << format('  # mkdir -pv "%s"', dest)
+          multi_patterns[:patterns][pattern].each do |pattern_filename|
+            script << format('  # mv -v "%s" "%s"/', pattern_filename, dest)
+          end
+        end
+      end
+
+      IO.write(scriptfile, script.join("\n"))
+    end
+
+    def cd_to(dest=dir)
+      Dir.chdir(dest)
+    end
+
+    def edit_script
+      cd_to dir
+      system('vim', File.basename(scriptfile(false)))
+      cd_to pwd
+    end
+
+    def clean_filename(name)
+      name = File.basename(name, '.part')
+      name.gsub!(/\s*\[[^\]]+\]\s*/, '')
+      name.gsub!(/_/, ' ')
+      name.split(?.).tap{|n| n.pop if n.length > 1 }.join(?.)
+    end
+
+    def split_filename(name)
+      name.split(/\s+\W\s+/).map(&:strip).select{|n| ! n.strip[/^[\d.\s]+$/] }.tap do |splits|
+        new_splits = []
+        if splits.length > 1
+          splits.each_cons(2){|cons| new_splits.push(cons.join(' - ')) }
+        end
+        new_splits.each(&splits.method(:push))
+      end
+    end
+  end
+end
+

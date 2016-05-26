@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+
+class CurlSubcommand < Subcommandable
+  class << self
+    def run(args)
+      new(args).tap(&:run)
+    end
+  end
+
+  attr_reader :args, :options, :literal_args
+  def initialize(args)
+    @args = args.dup
+    @options = args.select{|arg| arg[/^:/] }
+    @literal_args = @args - @options
+  end
+
+  def run
+    print_help_and_exit if asking_for_help?
+
+    puts
+    puts 'Command executed:'
+    puts
+    puts format('  h %s %s', MainCommand.subcommand, MainCommand.args.join(' '))
+    puts
+    puts
+    puts 'Command that would run:'
+    puts
+    puts format('  curl %s %s', converted_options.join(' '), literal_args.join(' '))
+    puts
+  end
+
+  def asking_for_help?
+    %w[ help options ].include? args.first
+  end
+
+  def print_help_and_exit
+    puts
+    puts 'USAGE: h curl [OPTION [OPTION]...] url'
+    puts
+    puts '  OPTION(s):'
+    puts
+    print_format = options_matcher.print_format
+    option_settings.each do |k,v|
+      val = v.is_a?(Proc) ? '=VALUE' : ''
+      puts format('    %s%s', print_format[k], val)
+    end
+    puts
+    exit 1
+  end
+
+  def option_settings
+    {
+      :headersonly.inspect => '-I',
+      :follow.inspect => '-L',
+      :saveas.inspect => Proc.new{|opt| _,fn = opt.split(?=, 2); '-o "%s"' % [fn] },
+    }
+  end
+
+  def options_matcher
+    SubcommandMatcher.from(option_settings)
+  end
+
+  def converted_options
+    options.map{|opt|
+      name,val = opt.split(?=, 2)
+      literal = options_matcher.match(name)
+      literal.is_a?(Proc) ? literal.call(opt) : literal
+    }
+  end
+end
+
+MainCommand.register_subcommand(:curl) {
+  CurlSubcommand.run(MainCommand.args)
+}
+
+

@@ -1,0 +1,331 @@
+class LightNovelsRipper < RipperPlugin
+  matches_if{|url|
+    File.file?(url) && url[/[.]txt$/i]
+  }
+
+  class << self
+    def from_file(file)
+      new(file).tap(&:write)
+    end
+
+    def index_from_instances(instances)
+      data = instances.map(&LightNovelsRipper.method(:instance_link)).join
+      IO.write('index.html', data)
+    end
+
+    def instance_link(i)
+      format('<a href="%<outfile>s">%<outfile>s</a><br>', outfile: File.basename(i.outfile))
+    end
+
+    def run(*files)
+      Dir.chdir(File.dirname(File.absolute_path(files.first)))
+      all_in_one = new('all.txt')
+
+      splits = files.map{|f|
+        fn = File.basename(f)
+        new(f).tap{|inst|
+          all_in_one.markers.push([f, inst.splits.count])
+        }
+      }.map(&:splits).inject(:concat)
+
+      all_in_one.tap{|all|
+        all.splits = splits
+        all.write
+      }
+    end
+
+    def old_run(*files)
+      Dir.chdir(File.dirname(File.absolute_path(files.first)))
+      files.map{|f|
+        fn = File.basename(f)
+        new(f).tap(&:write)
+      }.tap{|instances|
+        index_from_instances(instances)
+      }
+    end
+  end
+
+  attr_reader :file
+  attr_reader :template
+
+  attr_writer :data, :splits, :markers
+
+  def initialize(file='/dev/null')
+    @file = file
+    # @splits = @data.split(/(?<=\S)\s*\n(\s*\n)+(?=\S)/i)
+    @template = outfile_format
+  end
+
+  def markers
+    @markers ||= []
+  end
+
+  def markers_text
+    return '' if markers.empty?
+    pos = 1
+    split_length = @splits.count.to_s.length
+    # marker_format = '<b class="marker_label">%%s:</b> <span class="marker_start">%%0%dd</span> <span class="marker_size">%%0%dd</span><br>' % [split_length, split_length]
+    marker_format = '<b class="marker_label">%s:</b> <span class="marker_start">%s</span> <span class="marker_size">%s</span><br>'
+    markers.map{|f,c|
+      format(marker_format, f.sub('.txt', ''), pos, c).tap{
+        pos += c
+      }
+    }.unshift(format(marker_format, '<u>Chapter</u>', '<u>Starts</u>', '<u>Size</u>')).join("\n")
+  end
+
+  def data
+    @data ||= begin
+      contents = IO.read(file).strip rescue ''
+    end
+  end
+
+  def splitable_data
+    @splitable ||= data.gsub(/\n/, 'ZZZ').gsub(/\s+ZZZ/, 'ZZZ').gsub(/ZZZ\s+/, 'ZZZ')
+  end
+
+  def splits
+    @splits ||= splitable_data.split(/ZZZZZZZ*/).map{|s| s.gsub(/ZZZ/, "\n<br>\n") } #\s*\n(\s*\n)+(?=\S)/i)
+  end
+
+  def generate
+    format @template, {
+      markers_text: markers_text,
+      total_count: @splits.count,
+      pad_size: @splits.count.to_s.length,
+      ch1_text: @splits.first,
+      hidden_splits: @splits.map.with_index{|s,i|
+        split_to_div(s, i + 1)
+      }.join("\n\n")
+    }
+  end
+
+  def write
+    IO.write(outfile, generate)
+  end
+
+  def outfile
+    dir = File.dirname(File.absolute_path(file))
+    File.join(dir, File.basename(file).sub(/txt/i, 'html'))
+  end
+
+  def split_to_div(split_text, index)
+    div_format = format('<div id="%%0%dd">%%s</div>', @splits.count.to_s.length)
+    format(div_format, index, split_text)
+  end
+
+  def outfile_format
+    <<-"OUTFILE_FORMAT"
+<html>
+<head>
+  <style type="text/css">
+
+  a {
+    color: blue;
+  }
+
+  .marker_label, .marker_start, .marker_size {
+    font-family: "Courier New";
+    margin: 2px 4px;
+    width: 3.6em;
+    text-align: right;
+    display: inline-block;
+  }
+
+  .marker_label {
+    width: 5em;
+  }
+
+  .shortcut_key {
+    font-family: "Courier New";
+    margin: 2px 4px;
+    width: 2em;
+    text-align: right;
+    display: inline-block;
+  }
+
+  #current_id {
+    /*
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.1);
+    */
+    /* color: rgba(0, 200, 10, 0.901961); */
+    /* text-shadow: 1px 1px 2px black; */
+
+    font-size: 24pt;
+    font-weight: bold;
+    padding: 2px 8px;
+    letter-spacing: 3px;
+    color: red;
+    text-shadow: 1px 1px 2px green;
+  }
+
+  #container {
+    z-index: 10;
+    position: relative;
+    top: 8vh;
+    width: 450px;
+    margin: 0 auto;
+    font-size: 16pt;
+    line-height: 1.5em;
+  }
+
+  #current_spot {
+    margin: 0 15px;
+  }
+
+  #current_text {
+    margin: 35px 0;
+  }
+
+  #hidden_ids {
+    display: none;
+  }
+  </style>
+
+  <script type="text/javascript" src="/Users/hiro/assets/js/jquery2.js"></script>
+  <script type="text/javascript">
+
+    $(document).ready(function(){
+      hash = window.location.hash;
+      if(window.location.hash == null) { return; }
+      id = hash.replace(/^#0*/,'');
+      id = parseInt(id);
+      set_text(id);
+    })
+
+    $(document).on('keypress', function(e) {
+      actions = {
+        /*"g":*/ 103: function() { jump_to_split(); },
+        /*"j":*/ 106: function() { next_split(); },
+        /*"k":*/ 107: function() { prev_split(); },
+        /*"m":*/ 109: function() { toggle_markers(); },
+        /*"n":*/ 110: function() { next_split(); },
+        /*"o":*/ 111: function() { jump_to_split(); },
+        /*"p":*/ 112: function() { prev_split(); },
+        /*"s":*/ 115: function() { toggle_shortcuts(); },
+        /*"t":*/ 116: function() { toggle_markers(); },
+        /*"?":*/  63: function() { toggle_shortcuts(); },
+
+        // "g": 103: function() { jump_to_split(); },
+        // "o": 111: function() { jump_to_split(); },
+
+        // "j": 106: function() { next_split(); },
+        // "n": 110: function() { next_split(); },
+
+        // "k": 107: function() { prev_split(); },
+        // "p": 112: function() { prev_split(); },
+
+        // "m": 109: function() { toggle_markers(); },
+        // "t": 116: function() { toggle_markers(); },
+
+        // "s": 115: function() { toggle_shortcuts(); },
+        // "?":  63: function() { toggle_shortcuts(); },
+      }
+      if(actions[e.keyCode]) {
+        actions[e.keyCode]();
+      }
+    });
+
+    function toggle_markers() {
+      $('#markers').toggle();
+    }
+
+    function toggle_shortcuts() {
+      $('#shortcuts').toggle();
+    }
+
+    function lpad(num) {
+      numstr = num.toString();
+      padding = '00000000000000000';
+      left = padding.slice(0, %<pad_size>s - numstr.length);
+      return left + numstr;
+    }
+    window.current = 1;
+    window.total = %<total_count>s;
+    window.current_id = lpad(window.current);
+
+    function percentage_complete() {
+      return parseInt( (window.current / window.total) * 100);
+    }
+
+    function set_text(id) {
+      el = document.getElementById(lpad(id));
+      if(el == null) { return false; }
+
+      window.current = id;
+      window.current_id = lpad(id);
+      window.location.hash = '#' + window.current_id;
+
+      document.getElementById('percentage').innerText = percentage_complete();
+
+      label = document.getElementById('current_id')
+      label.innerText = window.current;
+
+      text = document.getElementById('current_text')
+      text.innerHTML = document.getElementById(window.current_id).innerHTML;
+
+      return false;
+    }
+
+    function jump_to_split() {
+      input = prompt('Enter the number of the split:');
+      num = parseInt(input);
+      return set_text(num);
+    }
+
+    function prev_split() {
+      return set_text(window.current - 1);
+    }
+
+    function next_split() {
+      return set_text(window.current + 1);
+    }
+  </script>
+</head>
+<body>
+
+  <div id="container">
+    <a href="#" id="markers_link" href="#" onclick="toggle_markers(); return false;">Toggle Markers</a>
+    <br>
+    <div id="markers" style="display: none;">
+    %<markers_text>s
+    </div>
+    <a href="#" id="shortcuts_link" href="#" onclick="toggle_shortcuts(); return false;">Toggle Shortcuts</a>
+    <div id="shortcuts" style="display: none;">
+    <span class="shortcut_key">&quot;o&quot;, </span><span class="shortcut_key">&quot;g&quot;</span> - Jump to Paragraph<br>
+    <span class="shortcut_key">&quot;p&quot;, </span><span class="shortcut_key">&quot;k&quot;</span> - Previous Paragraph<br>
+    <span class="shortcut_key">&quot;n&quot;, </span><span class="shortcut_key">&quot;j&quot;</span> - Next Paragraph<br>
+    <span class="shortcut_key">&quot;m&quot;, </span><span class="shortcut_key">&quot;t&quot</span> - Toggle Markers<br>
+    <span class="shortcut_key">&quot;s&quot;, </span><span class="shortcut_key">&quot;?&quot</span> - Toggle Shortcuts<br>
+    </div>
+    <br>
+    <a href="#" id="prevlink" accesskey="h" onclick="return prev_split();">&lt;- Prev</a>
+    <span id="current_spot">
+    <span id="current_id">1</span> / %<total_count>s (<span id="percentage">0</span>%%)
+    </span>
+    <a href="#" id="nextlink" accesskey="l" onclick="return next_split();">Next -&gt;</a><br>
+    <a href="#" id="jumplink" accesskey="j" onclick="return jump_to_split();">Jump to Split</a><br>
+    <div id="current_text">
+      %<ch1_text>s
+    </div>
+  </div>
+
+<div id="hidden_ids">
+
+
+    <a href="#" id="alt_prevlink" accesskey="p" onclick="return prev_split();">&lt;- Prev</a>
+    <a href="#" id="alt_nextlink" accesskey="n" onclick="return next_split();">Next -&gt;</a><br>
+    <a href="#" id="alt_jumplink" accesskey="G" onclick="return jump_to_split();">Jump to Split</a><br>
+    <a href="#" id="alt_jumplink2" accesskey="g" onclick="return jump_to_split();">Jump to Split</a><br>
+
+
+
+    %<hidden_splits>s
+
+</body>
+</html>
+    OUTFILE_FORMAT
+  end
+end
+
+# vim: ft=ruby

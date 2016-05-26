@@ -1,0 +1,93 @@
+class AnimefreakRipper < RipperPlugin
+  matches_if{|url|
+    [
+      /animefreak[.]tv/i,
+    ].any?{|pattern| url[pattern] }
+  }
+
+  class << self
+    def http
+      @http ||= Mechanize.new
+    end
+
+    def info_for(url)
+      page = http.get(url)
+      mirrors = mirrors_from_page(page)
+      ap mirrors: mirrors
+      puts http.get(mirrors.last).body
+    end
+
+    def download_dir(destination=nil)
+      @dir = File.join(Dir.home, 'dl', 'animefreak')
+      @dir = File.join(@dir, destination) if destination
+      @dir.tap{|d|
+        `mkdir -pv "#{d}"` unless File.directory?(d)
+      }
+    end
+
+    def upload2_mirror_link(page)
+      page.body[/http.*?upload2.com.embed.[^'"]+/i]
+    end
+
+    def run(url, destination=nil)
+      puts format('download_dir: %s', download_dir(destination))
+      outfile = url[%r{[^/]+$}].to_s + '.mp4'
+      outfile = File.join(download_dir(destination), outfile)
+      puts format('outfile: %s', outfile)
+
+      page = http.get(url)
+      next_page_link = page.links.find{|l| l.dom_class == 'page-next' }
+      next_page_link &&= next_page_link.resolved_uri.to_s
+
+      if File.exist?(outfile)
+        puts format('File exists: %s', outfile)
+      else
+        mirrors = mirrors_from_page(page)
+        puts format('mirrors: %s', mirrors)
+        mp4_mirror = mp4upload_mirror(mirrors)
+        puts format('mp4_mirror: %s', mp4_mirror)
+
+        upload2_mirror = upload2_mirror_link(page) || mirrors.find{|m| m[/upload2/i] }
+        puts format('upload2_mirror: %s', upload2_mirror)
+
+        if mp4_mirror || upload2_mirror
+        else
+          puts 'no mirror not found'
+          exit 1
+        end
+
+        link = if mp4_mirror
+          dlpage = http.get(mp4_mirror)
+          dlpage.body[/http[^'"]+?video.mp4/i]
+        elsif upload2_mirror
+          dlpage = http.get(upload2_mirror)
+          dlpage.body[/http[^&'"]+?[.]mp4/i]
+        end
+
+        if link
+          puts format('link: %s', link)
+          4.times do
+            system(format('wget -c --referer="%s" "%s" -O "%s"', mp4_mirror, link, outfile))
+            break if $?.success?
+          end
+        end
+      end
+
+      if next_page_link
+        return next_page_link
+        run(next_page_link, destination)
+      end
+      #vid = http.get(link)
+      #vid.saveas(outfile)
+      #vid.shutdown
+    end
+
+    def mirrors_from_page(page)
+      page.body.scan(/javascript.loadparts.'([^']+)'/i).flatten.map(&URI.method(:decode)).map{|s| s[/(?<=['"])http[^'"]+(?=['"])/i] }
+    end
+
+    def mp4upload_mirror(mirrors)
+      mirrors.find{|m| m[/mp4upload/i] }
+    end
+  end
+end
