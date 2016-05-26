@@ -23,6 +23,8 @@ class CommandTemplate
 
   def outfile
     file.sub(%r{src/}, 'new/').sub(%r{[.]erb}, '').tap{|ofile|
+      puts format('ofile: "%s"', ofile)
+      puts format('dirname: "%s"', File.dirname(ofile))
       `mkdir -pv "#{File.dirname(ofile)}"`
     }
   end
