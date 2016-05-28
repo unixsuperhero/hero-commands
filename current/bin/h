@@ -200,11 +200,36 @@ class SubcommandMatcher
     }
   end
 
-  def syntax
+  def simple_syntax_for(full,abbr)
+    right = full.slice(abbr.length, full.length)
+    format('%s[%s]', abbr, right)
+  end
+
+  def complex_syntax_for(full,abbr)
+    right = full.slice(abbr.length, full.length)
+    format('%s%s%s', abbr,
+                     right.chars.map{|c| ?[ + c },
+                     ?] * right.length)
+  end
+
+  def syntax_formats
     shortest_variations.map{|full,abbr|
-      optional = full.slice(abbr.length, full.length)
-      { full => format('%s[%s]', abbr, optional) }
+      # optional = full.slice(abbr.length, full.length)
+      {
+        full => {
+          simple: simple_syntax_for(full, abbr), # format('%s[%s]', abbr, optional),
+          complex: complex_syntax_for(full, abbr), # format('%s%s', abbr, optional.chars.map{|c| ?[ + c }.push(?] * optional.length).join),
+        }
+      }
     }.inject(:merge)
+  end
+
+  def syntax
+    syntax_formats.map{|k,h| { k => h[:simple] } }.inject(:merge)
+    # shortest_variations.map{|full,abbr|
+    #   optional = full.slice(abbr.length, full.length)
+    #   { full => format('%s[%s]', abbr, optional) }
+    # }.inject(:merge)
   end
   alias_method :print_format, :syntax
 
