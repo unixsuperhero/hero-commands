@@ -71,9 +71,10 @@ class SubcommandMatcher
   end
 
   def complex_syntax_for(full,abbr)
-    right = full.slice(abbr.length, full.length)
+    left,right = full.slice(0, abbr.length), full.slice(abbr.length, full.length)
+    return right.chars.inject(abbr.dup){|syn,c| syn.dup.concat(?[.dup).concat(c.dup) }.concat(?].dup * right.dup.length)
     format('%s%s%s', abbr,
-                     right.chars.map{|c| ?[ + c },
+                     right.chars.map{|c| ?[ + c }.join,
                      ?] * right.length)
   end
 
@@ -89,8 +90,9 @@ class SubcommandMatcher
     }.inject(:merge)
   end
 
-  def syntax
-    syntax_formats.map{|k,h| { k => h[:simple] } }.inject(:merge)
+  def syntax(type=:simple)
+    type = :simple unless type.respond_to?(:to_sym) && %i[ simple complex ].include?(type.to_sym)
+    syntax_formats.map{|k,h| { k => h[type.to_sym] } }.inject(:merge)
     # shortest_variations.map{|full,abbr|
     #   optional = full.slice(abbr.length, full.length)
     #   { full => format('%s[%s]', abbr, optional) }
