@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+class TodoSubcommand < Subcommandable
+  def self.todo_file
+    File.join Dir.home, 'todo.md'
+  end
+
+  register_subcommand(:list) {
+    exec('less "%s"' % todo_file)
+  }
+
+  register_subcommand(:edit) {
+    exec('%s "%s"' % [ENV.fetch('EDITOR', 'vim'), todo_file])
+  }
+end
+
+MainCommand.register_subcommand(:todo) {
+  TodoSubcommand.run(MainCommand.args)
+}
+
