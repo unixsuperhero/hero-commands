@@ -5,7 +5,41 @@ class AnimeSubcommand < Subcommandable
     def downloads_dir
       File.join(Dir.home, 'Downloads', 'finished')
     end
+
+    def series_info
+      series_paths = Dir[File.join(downloads_dir, '*')].select(&File.method(:directory?))
+      series_paths.inject({}){|info,dir| info.merge( File.basename(dir) => dir ) }
+    end
+
+    def series_names
+      series_info.keys
+    end
+
+    def cd_if_series_matches_arg
+      return if args.empty?
+
+      pattern = Regexp.new(args.first, ?i)
+      matching_series = series_info.select{|sname,sdir| sname[pattern] }
+
+      if matching_series.count != 1
+        puts
+        puts format('Pattern, "%s", unable to uniquely match a series:', pattern)
+        puts format('  %s', matching_series.keys.join("\n  "))
+        puts
+        exit 1
+      end
+
+      dir = matching_series.values.first
+      exit 1 unless dir && File.directory?(dir)
+
+      Dir.chdir(dir)
+    end
   end
+
+  register_subcommand(:cdtest){
+    cd_if_series_matches_arg
+    exit 0
+  }
 
   register_subcommand(:example){
     puts format("example subcommand for: %s", self)
@@ -35,6 +69,8 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:show_next_episode){
+    cd_if_series_matches_arg
+
     exit 1 unless File.exist?('watched.grep')
     system(format('ls -1 | egrep -vf watched.grep | head -1'))
     exit 0
@@ -42,6 +78,8 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:next_episode){
+    cd_if_series_matches_arg
+
     # open the next episode and add it to the watched_episodes.grep file
     next_episode = `ls -1 | grep -vf watched.grep`.lines
     if next_episode.empty?
@@ -58,10 +96,7 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:series){
-    Dir.chdir(downloads_dir)
-
-    folders = Dir['*'].select{|file| File.directory?(file) }
-    puts folders
+    puts series_names
     exit 0
   }
 
@@ -87,6 +122,8 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:all_episodes){
+    cd_if_series_matches_arg
+
     exit 1 unless File.exist?('watched.grep')
     system(format('ls -1 | grep -v watched.grep'))
     exit 0
@@ -94,6 +131,8 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:watched_episodes){
+    cd_if_series_matches_arg
+
     exit 1 unless File.exist?('watched.grep')
     system(format('ls -1 | egrep -f watched.grep | grep -v watched.grep'))
     exit 0
@@ -101,6 +140,8 @@ class AnimeSubcommand < Subcommandable
   }
 
   register_subcommand(:unwatched_episodes){
+    cd_if_series_matches_arg
+
     exit 1 unless File.exist?('watched.grep')
     system(format('ls -1 | egrep -vf watched.grep'))
     exit 0
