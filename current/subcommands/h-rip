@@ -71,6 +71,22 @@ class RipSubcommand < Subcommandable
   }
 
   register_subcommand(:update) {
+    config = Config.new(File.join(Dir.home, 'rippers.yml'), 'mangapark')
+
+    puts 'selected keys:'
+    puts '  %s' % config.data.keys.select{|k|
+      if args.first.nil?
+        k != 'http:'
+      else
+        k[Regexp.new(args.first, ?i)]
+      end
+    }.map{|manga|
+      url = config.data.dig(manga, 'url')
+      system('h-rip', url, manga)
+    }.join("\n  ")
+
+    # puts 'last-downloaded-urls:'
+    # puts '  %s' % urls.join("\n  ")
   }
 end
 
