@@ -77,6 +77,24 @@ class AnimeSubcommand < Subcommandable
     # open the next episode and add it to the watched_episodes.grep file
   }
 
+  register_subcommand(:unwatch){
+    cd_if_series_matches_arg
+
+    error_exit('"watched.grep" file not found') unless File.file?('watched.grep')
+
+    lines = IO.readlines('watched.grep').map(&:chomp)
+    last_episode = lines.reverse.find{|line| not line[/watched.*grep/i] }
+    error_exit('No episodes found in "watched.grep" file') unless last_episode
+
+    last_episode_index = lines.index(last_episode)
+    error_exit('Unable to match episode with line in "watched.grep"') unless last_episode
+
+    removed_pattern = lines.delete_at(last_episode_index)
+    puts format('Removed: /%s/', removed_pattern)
+
+    IO.write('watched.grep', lines.join("\n"))
+  }
+
   register_subcommand(:next_episode){
     cd_if_series_matches_arg
 
@@ -130,7 +148,7 @@ class AnimeSubcommand < Subcommandable
     # list the episodes that haven't been watched yet
   }
 
-  register_subcommand(:watched_episodes){
+  register_subcommand(:past_episodes){
     cd_if_series_matches_arg
 
     exit 1 unless File.exist?('watched.grep')
@@ -139,7 +157,7 @@ class AnimeSubcommand < Subcommandable
     # list the episodes that haven't been watched yet
   }
 
-  register_subcommand(:unwatched_episodes){
+  register_subcommand(:future_episodes){
     cd_if_series_matches_arg
 
     exit 1 unless File.exist?('watched.grep')

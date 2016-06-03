@@ -246,6 +246,14 @@ class Subcommandable
   class << self
     attr_accessor :subcommand
 
+    def error_exit(msg=nil, &block)
+      puts format('ERROR: %s', msg) if msg
+
+      block.call if block_given?
+
+      exit 1
+    end
+
     def print_subcommand_list
       puts <<-MESSAGE.lines.map{|l| l.chomp.sub(/^\s{8}/, '') }
         ERROR: Subcommand required.
