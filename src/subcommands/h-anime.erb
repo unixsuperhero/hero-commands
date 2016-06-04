@@ -15,11 +15,18 @@ class AnimeSubcommand < Subcommandable
       series_info.keys
     end
 
+    def series_matching_first_arg
+      return {} if args.empty?
+      @series_matching_arg ||= begin
+        pattern = Regexp.new(args.first, ?i)
+        series_info.select{|sname,sdir| sname[pattern] }
+      end
+    end
+
     def cd_if_series_matches_arg
       return if args.empty?
 
-      pattern = Regexp.new(args.first, ?i)
-      matching_series = series_info.select{|sname,sdir| sname[pattern] }
+      matching_series = series_matching_first_arg # series_info.select{|sname,sdir| sname[pattern] }
 
       if matching_series.count != 1
         puts
@@ -38,6 +45,24 @@ class AnimeSubcommand < Subcommandable
 
   register_subcommand(:cdtest){
     cd_if_series_matches_arg
+    exit 0
+  }
+
+  register_subcommand(:dir, :directory, :path){
+    if args.empty?
+      printf downloads_dir
+      exit 0
+    end
+
+    matching_series = series_matching_first_arg
+
+    if matching_series.count > 1
+      puts format('Pattern /%s/i did not return a uniq match:', args.first)
+      puts format('  %s', matching_series.keys.join("\n  "))
+      exit 0
+    end
+
+    printf matching_series.values.first
     exit 0
   }
 

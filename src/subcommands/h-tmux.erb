@@ -1,0 +1,11 @@
+
+class TmuxSubcommand < Subcommandable
+  register_subcommand(:ls, :list) {
+    puts `tmux ls`
+  }
+end
+
+MainCommand.register_subcommand(:tmux) {
+  TmuxSubcommand.run(MainCommand.args)
+}
+

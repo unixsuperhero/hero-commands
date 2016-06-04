@@ -1,0 +1,70 @@
+class HeroSubcommand < Subcommandable
+  class << self
+    def base_dir
+      File.join(Dir.home, 'projects', 'hero-commands')
+    end
+
+    def src_dir
+      File.join(base_dir, 'src')
+    end
+  end
+
+  register_subcommand(:bins) {
+    HeroHelper.run_inside_dir(src_dir) {
+      search_inside = 'bin'
+      if args.empty?
+        puts Dir[File.join(search_inside, '**/*')].select(&File.method(:file?))
+      else
+        regexp = Regexp.new(args.first, ?i)
+        puts Dir[File.join(search_inside, '**/*')].select{|f|
+          File.file?(f) && f[regexp]
+        }
+      end
+    }
+  }
+
+  register_subcommand(:subcommands) {
+    HeroHelper.run_inside_dir(src_dir) {
+      search_inside = 'subcommands'
+      if args.empty?
+        puts Dir[File.join(search_inside, '**/*')].select(&File.method(:file?))
+      else
+        regexp = Regexp.new(args.first, ?i)
+        puts Dir[File.join(search_inside, '**/*')].select{|f|
+          File.file?(f) && f[regexp]
+        }
+      end
+    }
+  }
+
+  register_subcommand(:rippers) {
+    HeroHelper.run_inside_dir(src_dir) {
+      search_inside = 'rippers'
+      if args.empty?
+        puts Dir[File.join(search_inside, '**/*')].select(&File.method(:file?))
+      else
+        regexp = Regexp.new(args.first, ?i)
+        puts Dir[File.join(search_inside, '**/*')].select{|f|
+          File.file?(f) && f[regexp]
+        }
+      end
+    }
+  }
+
+  register_subcommand(:edit) {
+    HeroHelper.run_inside_dir(src_dir) {
+      regexp = Regexp.new(args.first, ?i)
+      matches = Dir[File.join('**/*')].select{|f|
+        File.file?(f) && f[regexp]
+      }
+
+      system('vim', *matches)
+    }
+  }
+
+end
+
+MainCommand.register_subcommand(:hero) {
+  HeroSubcommand.run(MainCommand.args)
+}
+
