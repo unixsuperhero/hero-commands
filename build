@@ -25,8 +25,8 @@ class CommandTemplate
     def build_in_order
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
-      }.map(&:print_children)
-      puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
+      } #.map(&:print_children)
+      # puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
     end
 
     def endless_proc
@@ -40,7 +40,7 @@ class CommandTemplate
     def render_and_add_injected_files(file, injected_files=[])
       new(file).tap{|cmd|
         cmd.injected_files.concat injected_files
-        puts format('file: %s; injected_files: %s', file, injected_files.join('; '))
+        # puts format('file: %s; injected_files: %s', file, injected_files.join('; '))
         cmd.save
         build_order.select{|k,v|
           v == file
@@ -57,12 +57,13 @@ class CommandTemplate
   end
 
   def print_children
-    puts
-    puts format('file: %s', @file)
-    puts format('  %s', children.map(&:file).join("\n  "))
-    puts
+    # puts
+    # puts format('file: %s', @file)
+    # puts format('  %s', children.map(&:file).join("\n  "))
+    # puts
     children.map(&:print_children)
   end
+
   def children
     @children ||= []
   end
@@ -89,14 +90,33 @@ class CommandTemplate
 
   def outfile
     file.sub(%r{src/}, 'current/').sub(%r{[.]erb}, '').tap{|ofile|
-      puts format('ofile: "%s"', ofile)
-      puts format('dirname: "%s"', File.dirname(ofile))
+      # puts format('ofile: "%s"', ofile)
+      # puts format('dirname: "%s"', File.dirname(ofile))
       `mkdir -pv "#{File.dirname(ofile)}"`
     }
   end
 
   def save
-    IO.write(outfile, render)
+    contents = render
+    IO.write(outfile, contents).tap{
+      _,shared_path = outfile.split(?/, 2)
+      break if shared_path[%r{^lib/}]
+
+      homefile = File.join(Dir.home, shared_path)
+      diff_cmd = format('diff -qs "%s" "%s" &>/dev/null', outfile, homefile)
+      # puts format('diff_cmd: %s', diff_cmd)
+      system(diff_cmd)
+      break if $?.success?
+
+      if File.file?(homefile)
+        puts format('Deleting "%s" because it is different from rebuilt version...', homefile)
+        File.unlink(homefile)
+      end
+
+      if File.link(outfile, homefile) == 0
+        puts format('Hard linked "%s" to "%s"...', outfile, homefile)
+      end
+    }
   end
 end
 
