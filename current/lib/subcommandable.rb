@@ -66,6 +66,7 @@ class SubcommandMatcher
   end
 
   def simple_syntax_for(full,abbr)
+    return abbr if abbr == full
     right = full.slice(abbr.length, full.length)
     format('%s[%s]', abbr, right)
   end
