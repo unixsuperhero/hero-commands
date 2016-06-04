@@ -62,6 +62,58 @@ end
 
 class Git
   class << self
+    def inside_repo?
+      return true if `git rev-parse --is-inside-work-tree`[/true/]
+      return true if `git rev-parse --is-inside-git-dir`[/true/]
+      false
+    end
+
+    def path_to_root
+      return '.' unless inside_repo?
+      `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def absolute_root_path
+      return '.' unless inside_repo?
+      `git rev-parse --show-toplevel`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_root_path
+      return false unless inside_repo?
+      Dir.chdir(path_to_root)
+    end
+
+    def path_to_git_dir
+      return '.' unless inside_repo?
+      `git rev-parse --git-dir`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_git_dir
+      return false unless inside_repo?
+      Dir.chdir(path_to_git_dir)
+    end
+
+    def current_head
+      return false  unless inside_repo?
+      head = `git symbolic-ref HEAD`.lines.first.chomp
+      head.sub(%r{^refs/heads/}, '')
+    end
+
+    def heads_dir
+      File.join(path_to_git_dir, 'refs/heads')
+    end
+
+    def heads
+      pwd = Dir.pwd
+      Dir.chdir heads_dir
+
+      Dir['**/*'].select{|f|
+        File.file?(f)
+      }.tap{
+        Dir.chdir(pwd)
+      }
+    end
+
     def current_branch
       puts 'TESTING'
       `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
@@ -103,9 +155,68 @@ class Git
 end
 
 class GitSubcommand < Subcommandable
-
-  register_subcommand(:currentbranch){
+  register_subcommand(:current_branch){
     puts format("current branch: %s", Git.current_branch)
+  }
+
+  register_subcommand(:prefix){
+    if args.empty?
+      Git.branch_prefix
+      exit 0
+    else
+      exit 1
+
+      # check to see if args.first exists as a prefix for current branch
+      # if it does...checkout the prefix
+      # if it does not...copy and then checkout the prefix
+
+      cmd = "git branch '#{args.first}/#{Git.branch_base}'"
+      puts format('Command: "%s"', cmd)
+      system(cmd)
+    end
+  }
+
+  register_subcommand(:link_branch, :alias, :ln){
+    error_exit('pwd, "%s", is not inside a git repo' % Dir.pwd) unless Git.inside_repo?
+    from,to = args
+
+    error_exit('the new branch name is a required argument') if args.empty?
+
+    if to.nil?
+      to = from
+      from = Git.current_head
+    end
+
+    heads = Git.heads
+
+    if heads.include?(to)
+      puts format('"%<to>s" exists...use symbolic-ref --delete refs/heads/%<to>s', to: to)
+    end
+
+    cmd = format('git symbolic-ref refs/heads/%s refs/heads/%s', to, from)
+    puts format('Command: "%s"', cmd)
+
+    puts format('Command: "%s" => to show new alias was created', 'git branch')
+  }
+
+  register_subcommand(:root_dir) {
+    printf Git.path_to_root
+  }
+
+  register_subcommand(:git_dir) {
+    printf Git.path_to_git_dir
+  }
+
+  register_subcommand(:branch){
+    branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    if args.empty?
+      puts branches
+      exit 0
+    end
+
+    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
+    exit 0
   }
 end
 

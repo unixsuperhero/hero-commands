@@ -1,0 +1,8 @@
+
+# class ProjectSubcommand < Subcommandable
+# end
+
+# MainCommand.register_subcommand(:project) {
+#   ProjectSubcommand.run(MainCommand.args)
+# }
+

@@ -1,0 +1,7 @@
+# class MangaSubcommand < Subcommandable
+# end
+
+# MainCommand.register_subcommand(:manga) {
+#   MangaSubcommand.run(MainCommand.args)
+# }
+
