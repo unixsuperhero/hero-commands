@@ -211,20 +211,8 @@ class Subcommandable
       @dynamic_subcommand = block
     end
 
-    def register_subcommand(name, &block)
-      subcommands.merge!( name.to_s => block ).tap{|cmds|
-      # @headers_printed ||= []
-      #unless @headers_printed.include?(self)
-      #  puts
-      #  puts format('Class Name: %s', self.name)
-      #  puts format('Registered subcommand: %s', name)
-      #  puts
-      #  puts format('  Subcommand Names:', name)
-
-      #  @headers_printed.push(self)
-      #end
-      #puts format('    %s', name)
-      }
+    def register_subcommand(*names, &block)
+      names.each{|name| subcommands.merge!( name.to_s => block ) }
     end
 
     def load_subcommands_by_prefix(prefix)

@@ -19,6 +19,15 @@ class MainCommand < Subcommandable
     system(editor, *files)
   }
 
+  register_subcommand(:z) { # testing the exit codes for diff
+    output = `diff /tmp/diff-test-a /tmp/diff-test-b &>/dev/null`
+    ap output: output, sucessful: $?.success?
+
+    output = `diff /tmp/diff-test-a /tmp/diff-test-c &>/dev/null`
+    ap output: output, sucessful: $?.success?
+    exit 0
+  }
+
   register_subcommand(:fix) {
     unless Object.const_defined?(:FixSubcommand)
       found = PathEnv.find('new_h-fix')
