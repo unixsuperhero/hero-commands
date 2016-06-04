@@ -51,6 +51,20 @@ class HeroSubcommand < Subcommandable
     }
   }
 
+  register_subcommand(:libs) {
+    HeroHelper.run_inside_dir(src_dir) {
+      search_inside = 'lib'
+      if args.empty?
+        puts Dir[File.join(search_inside, '**/*')].select(&File.method(:file?))
+      else
+        regexp = Regexp.new(args.first, ?i)
+        puts Dir[File.join(search_inside, '**/*')].select{|f|
+          File.file?(f) && f[regexp]
+        }
+      end
+    }
+  }
+
   register_subcommand(:edit) {
     HeroHelper.run_inside_dir(src_dir) {
       regexp = Regexp.new(args.first, ?i)
