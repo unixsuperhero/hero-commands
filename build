@@ -96,6 +96,19 @@ class CommandTemplate
     }
   end
 
+  def homefile_backup(homefile, secs=nil)
+    secs ||= Time.now.strftime('%s').to_i % 86400
+    ymd = Time.now.strftime('%Y%m%d')
+    newfile = format('%s.%s.%s', homefile, ymd, secs)
+    if File.exist?(newfile)
+      puts format('homefile_backup: "%s" exists', newfile)
+      puts format('homefile_backup: secs == "%s"', secs)
+      homefile_backup(homefile, secs + 1)
+    else
+      newfile
+    end
+  end
+
   def save
     contents = render
     IO.write(outfile, contents).tap{
@@ -108,9 +121,10 @@ class CommandTemplate
       system(diff_cmd)
       break if $?.success?
 
-      if File.file?(homefile)
-        puts format('Deleting "%s" because it is different from rebuilt version...', homefile)
-        File.unlink(homefile)
+      if File.exist?(homefile)
+        renamed_homefile = homefile_backup(homefile)
+        puts format('Backing up "%s" to "%s"...', homefile, renamed_homefile)
+        File.rename(homefile, renamed_homefile)
       end
 
       if File.link(outfile, homefile) == 0
