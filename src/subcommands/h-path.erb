@@ -8,7 +8,7 @@ class PathSubcommand < Subcommandable
   register_subcommand(:append) {
     error_exit('at least 1 arg is required to append to $PATH') if args.empty?
 
-    output = format('export PATH=$PATH:%s', args.join(?:))
+    output = format('export PATH=\$PATH:%s', args.join(?:))
     CopyOrPaste.copy(output)
     puts output
   }
@@ -16,7 +16,7 @@ class PathSubcommand < Subcommandable
   register_subcommand(:prepend) {
     error_exit('at least 1 arg is required to prepend to $PATH') if args.empty?
 
-    output = format('export PATH=%s:$PATH', args.join(?:))
+    output = format('export PATH=%s:\$PATH', args.join(?:))
     CopyOrPaste.copy(output)
     puts output
   }
