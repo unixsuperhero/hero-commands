@@ -1,0 +1,96 @@
+Alternation
+Any character
+Atomic group
+Attempt anchor
+Backreference
+Backslash character
+Backslash escapes a metacharacter
+Backspace character
+Balancing group
+Branch reset group
+Capturing group
+Carriage return character
+Character escape
+Comment
+Conditional
+Control character escape
+Digits shorthand
+Escape character
+Escape sequence
+Fixed quantifier
+Form feed character
+Forward conditional
+Forward subroutine call
+GNU word boundary
+Greedy quantifier
+Hexadecimal digit shorthand
+Hexadecimal escape
+Horizontal whitespace shorthand
+Implicit lookahead conditional
+Keep text out of the regex match
+Lazy quantifier
+Line anchor
+Line break
+Line feed character
+Literal character
+Literal curly braces
+Lookaround conditional
+Lowercase shorthand
+Match anchor
+NULL escape
+Named backreference
+Named capturing group
+Named conditional
+Named subroutine call
+Negated Unicode property
+Negative lookahead
+Negative lookbehind
+Non-capturing group
+Non-digits shorthand
+Non-hexadecimal digit shorthand
+Non-horizontal whitespace shorthand
+Non-lowercase shorthand
+Non-uppercase shorthand
+Non-vertical whitespace shorthand
+Non-whitespace shorthand
+Non-word character shorthand
+Not a line break
+Octal escape
+POSIX word boundary
+Positive lookahead
+Positive lookbehind
+Possessive quantifier
+Recursion
+Relative Backreference
+Relative conditional
+Relative subroutine call
+String anchor
+Subroutine call
+Subroutine definitions
+Tab character
+Tcl word boundary
+Unicode block
+Unicode category
+Unicode code point
+Unicode grapheme
+Unicode property
+Unicode script
+Uppercase shorthand
+Vertical tab character
+Vertical whitespace shorthand
+Whitespace shorthand
+Word boundary
+Word character shorthand
+XML shorthand
+Backslash escapes a metacharacter
+Character class intersection
+Character class subtraction
+Literal backslash
+Literal character
+Literal opening bracket
+Negated character class
+Nested character class
+POSIX character equivalence
+POSIX class
+POSIX collation sequence
+Range
