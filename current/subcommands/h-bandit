@@ -1,0 +1,11 @@
+class BanditSubcommand < Subcommandable
+  dynamic_subcommand {
+    system format('ssh bandit%d@bandit.labs.overthewire.org', subcommand)
+    exit 0
+  }
+end
+
+MainCommand.register_subcommand(:bandit) {
+  BanditSubcommand.run(MainCommand.args)
+}
+
