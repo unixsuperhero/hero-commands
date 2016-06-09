@@ -441,9 +441,9 @@ end
 
 class MainCommand < Subcommandable
 
-  def self.editor
+  let(:editor) {
     ENV['EDITOR'] || 'vim'
-  end
+  }
 
   register_subcommand(:edit) {
     files = args.flat_map{|arg| PathEnv.search(arg) }

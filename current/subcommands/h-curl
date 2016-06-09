@@ -1,11 +1,9 @@
 #!/usr/bin/env ruby
 
 class CurlSubcommand < Subcommandable
-  class << self
-    def run(args)
-      new(args).tap(&:run)
-    end
-  end
+  let(:run){ |args|
+    new(args).tap(&:run)
+  }
 
   attr_reader :args, :options, :literal_args
   def initialize(args)
