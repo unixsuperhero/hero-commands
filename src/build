@@ -1,0 +1,157 @@
+#!/usr/bin/env ruby
+
+require 'erb'
+require 'awesome_print'
+
+class CommandTemplate
+  class << self
+    def move_to_repo_base
+      if `git rev-parse --is-inside-work-tree`[/true/i]
+        Dir.chdir(`git rev-parse --show-cdup`.chomp)
+      elsif `git rev-parse --is-inside-git-dir`[/true/i]
+        Dir.chdir File.join(`git rev-parse --git-dir`.chomp, '..')
+      end
+    end
+
+    def erb_files
+      move_to_repo_base
+      Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb').length * -1 }
+    end
+
+    def build_order
+      @pairs ||= erb_files.inject({}){|parents,file|
+        base = File.basename(file, '.erb')
+        erb_files.find{|par|
+          par_base = File.basename(par, '.erb')
+          par_base.length < base.length && base.start_with?(par_base + ?-)
+        }.tap do |parent|
+          parents.merge!(file => parent)
+        end
+        parents
+      }
+    end
+
+    def build_in_order
+      move_to_repo_base
+      build_order.select{|k,v| v.nil? }.keys.map{|newfile|
+        render_and_add_injected_files(newfile)
+      } #.map(&:print_children)
+      # puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
+    end
+
+    def endless_proc
+      Proc.new{|h,k| h[k] = Hash.new(&endless_proc) }
+    end
+
+    def build_levels
+      @levels = Hash.new(&endless_proc)
+    end
+
+    def render_and_add_injected_files(file, injected_files=[])
+      new(file).tap{|cmd|
+        cmd.injected_files.concat injected_files
+        # puts format('file: %s; injected_files: %s', file, injected_files.join('; '))
+        cmd.save
+        build_order.select{|k,v|
+          v == file
+        }.keys.each do |newfile|
+          cmd.children.push render_and_add_injected_files(newfile, cmd.injected_files)
+        end
+      }
+    end
+  end
+  attr_reader :file
+
+  def initialize(file)
+    @file = file
+  end
+
+  def print_children
+    # puts
+    # puts format('file: %s', @file)
+    # puts format('  %s', children.map(&:file).join("\n  "))
+    # puts
+    children.map(&:print_children)
+  end
+
+  def children
+    @children ||= []
+  end
+
+  def inject_files(*files)
+    files.flatten.map{|filename|
+      if injected_files.include?(filename)
+        puts format('Already injected: "%s"', filename)
+        next
+      end
+
+      injected_files.push(filename)
+      render(filename)
+    }.compact.join("\n")
+  end
+
+  def injected_files
+    @injected_files ||= []
+  end
+
+  def render(filename=@file)
+    ERB.new(IO.read(filename)).result(binding)
+  end
+
+  def outfile
+    file.sub(%r{src/}, 'current/').sub(%r{[.]erb}, '').tap{|ofile|
+      # puts format('ofile: "%s"', ofile)
+      # puts format('dirname: "%s"', File.dirname(ofile))
+      `mkdir -pv "#{File.dirname(ofile)}"`
+    }
+  end
+
+  def homefile_backup(homefile, secs=nil)
+    secs ||= Time.now.strftime('%s').to_i % 86400
+    ymd = Time.now.strftime('%Y%m%d')
+    newfile = format('%s.%s.%s', homefile, ymd, secs)
+    if File.exist?(newfile)
+      puts format('homefile_backup: "%s" exists', newfile)
+      puts format('homefile_backup: secs == "%s"', secs)
+      homefile_backup(homefile, secs + 1)
+    else
+      newfile
+    end
+  end
+
+  def save
+    contents = render
+    IO.write(outfile, contents).tap{
+      _,shared_path = outfile.split(?/, 2)
+      break if shared_path[%r{^lib/}]
+
+      homefile = File.join(Dir.home, shared_path)
+      diff_cmd = format('diff -qs "%s" "%s" &>/dev/null', outfile, homefile)
+      # puts format('diff_cmd: %s', diff_cmd)
+      system(diff_cmd)
+      break if $?.success?
+
+      if File.exist?(homefile)
+        renamed_homefile = homefile_backup(homefile)
+        puts format('Backing up "%s" to "%s"...', homefile, renamed_homefile)
+        File.rename(homefile, renamed_homefile)
+      end
+
+      if File.link(outfile, homefile) == 0
+        puts format('Hard linked "%s" to "%s"...', outfile, homefile)
+      end
+    }
+  end
+end
+
+# erb_files = Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb') }
+ap erb_files: CommandTemplate.erb_files, build_order: CommandTemplate.build_order
+
+CommandTemplate.build_in_order
+
+# ap saves: erb_files.map{|f|
+#   { f => CommandTemplate.new(f).save }
+# }.inject(:merge)
+
+# vim: ft=ruby
+
