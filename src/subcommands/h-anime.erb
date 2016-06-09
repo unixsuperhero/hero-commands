@@ -2,28 +2,28 @@
 
 class AnimeSubcommand < Subcommandable
   class << self
-    def downloads_dir
+    let(:downloads_dir) {
       File.join(Dir.home, 'Downloads', 'finished')
-    end
+    }
 
-    def series_info
+    let(:series_info) {
       series_paths = Dir[File.join(downloads_dir, '*')].select(&File.method(:directory?))
       series_paths.inject({}){|info,dir| info.merge( File.basename(dir) => dir ) }
-    end
+    }
 
-    def series_names
+    let(:series_names) {
       series_info.keys
-    end
+    }
 
-    def series_matching_first_arg
+    let(:series_matching_first_arg) {
       return {} if args.empty?
       @series_matching_arg ||= begin
         pattern = Regexp.new(args.first, ?i)
         series_info.select{|sname,sdir| sname[pattern] }
       end
-    end
+    }
 
-    def cd_if_series_matches_arg
+    let(:cd_if_series_matches_arg) {
       return if args.empty?
 
       matching_series = series_matching_first_arg # series_info.select{|sname,sdir| sname[pattern] }
@@ -40,7 +40,7 @@ class AnimeSubcommand < Subcommandable
       exit 1 unless dir && File.directory?(dir)
 
       Dir.chdir(dir)
-    end
+    }
   end
 
   register_subcommand(:cdtest){

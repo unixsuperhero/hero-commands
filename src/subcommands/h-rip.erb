@@ -3,11 +3,7 @@
 require 'mechanize'
 
 class RipSubcommand < Subcommandable
-  class << self
-    def ripper_plugin(url)
-      @plugin ||= RipperPlugin.plugin_for(url)
-    end
-  end
+  let(:ripper_plugin) {|url| @plugin ||= RipperPlugin.plugin_for(url) }
 
   dynamic_subcommand{
     plugin = ripper_plugin(subcommand)

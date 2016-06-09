@@ -1,9 +1,7 @@
 #!/usr/bin/env ruby
 
 class TodoSubcommand < Subcommandable
-  def self.todo_file
-    File.join Dir.home, 'todo.md'
-  end
+  let(:todo_file) { File.join(Dir.home, 'todo.md') }
 
   register_subcommand(:list) {
     exec('less "%s"' % todo_file)
