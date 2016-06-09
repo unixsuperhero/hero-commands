@@ -1,23 +1,19 @@
 class BanditSubcommand < Subcommandable
-  let(:new_bandit_dir) {
+  let(:bandit_dir) {
     File.join(Dir.home, 'projects', 'bandit')
   }
 
-  def self.bandit_dir
-    File.join(Dir.home, 'projects', 'bandit')
-  end
-
-  def self.yaml_file
+  let(:yaml_file) {
     File.join(bandit_dir, 'passwords.yml')
-  end
+  }
 
-  def self.cd_to_dir
+  let(:cd_to_dir) {
     Dir.chdir(bandit_dir)
-  end
+  }
 
-  def self.config
+  let(:config) {
     Config.new(yaml_file, 'passwords')
-  end
+  }
 
   dynamic_subcommand {
     cd_to_dir
