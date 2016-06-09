@@ -5,11 +5,23 @@ require 'awesome_print'
 
 class CommandTemplate
   class << self
+    def git_cdup
+      return false unless `git rev-parse --is-inside-work-tree`[/true/i]
+      File.join('.', `git rev-parse --show-cdup`.chomp).tap{|cdup|
+        return false if cdup == './'
+      }
+    end
+
+    def git_dir_parent
+      return false unless `git rev-parse --is-inside-git-dir`[/true/i]
+      File.join(`git rev-parse --git-dir`.chomp, '..')
+    end
+
     def move_to_repo_base
-      if `git rev-parse --is-inside-work-tree`[/true/i]
-        Dir.chdir(`git rev-parse --show-cdup`.chomp)
-      elsif `git rev-parse --is-inside-git-dir`[/true/i]
-        Dir.chdir File.join(`git rev-parse --git-dir`.chomp, '..')
+      if cdup = git_cdup
+        Dir.chdir(cdup)
+      elsif gitdir = git_dir_parent
+        Dir.chdir(gitdir)
       end
     end
 
