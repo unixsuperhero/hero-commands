@@ -5,7 +5,16 @@ require 'awesome_print'
 
 class CommandTemplate
   class << self
+    def move_to_repo_base
+      if `git rev-parse --is-inside-work-tree`[/true/i]
+        Dir.chdir(`git rev-parse --show-cdup`.chomp)
+      elsif `git rev-parse --is-inside-git-dir`[/true/i]
+        Dir.chdir File.join(`git rev-parse --git-dir`.chomp, '..')
+      end
+    end
+
     def erb_files
+      move_to_repo_base
       Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb').length * -1 }
     end
 
@@ -23,6 +32,7 @@ class CommandTemplate
     end
 
     def build_in_order
+      move_to_repo_base
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
       } #.map(&:print_children)
