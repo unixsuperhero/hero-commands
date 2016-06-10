@@ -242,10 +242,19 @@ class SubcommandMatcher
 end
 
 
+module LetHelper
+  def self.let(name, &block)
+    define_method(name, &block)
+  end
+end
 
 class Subcommandable
   class << self
     attr_accessor :subcommand
+
+    def inherited(base)
+      base.extend LetHelper
+    end
 
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
