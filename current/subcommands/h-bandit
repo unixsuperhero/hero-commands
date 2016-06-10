@@ -16,7 +16,7 @@ class BanditSubcommand < Subcommandable
   end
 
   def self.config
-    Config.new(yaml_file, 'passwords')
+    @config_file ||= Config.new(yaml_file, 'passwords')
   end
 
   dynamic_subcommand {
