@@ -1,5 +1,4 @@
 
-
 class CmdPipe
   attr_accessor :commands, :pipes, :options
   def initialize(*args)
@@ -110,39 +109,6 @@ class CmdPipe
       # Process.detach(pid)
       Process.kill(:KILL, pid)
       @killed = true
-    end
-  end
-end
-
-
-
-class CopyOrPaste
-  class << self
-    def copy(text, with_newline=false)
-      cmdpipe = CmdPipe.new("printf '%s'" % text, 'pbcopy')
-      cmdpipe.start
-      cmdpipe.stop
-      # cmd = with_newline ? 'echo' : 'printf'
-      # `#{cmd} '#{text.chomp}' | pbcopy`
-      show_copied_text
-    end
-
-    def copy2(text)
-      cmdpipe = CmdPipe.new('printf "%s"' % text, 'pbcopy')
-      cmdpipe.start
-      puts
-      # cmdpipe.statuses
-      # sleep 1
-      puts
-      cmdpipe.stop
-    end
-
-    def show_copied_text
-      system(%{printf 'The text copied was: "%s"' "$(pbpaste)"})
-    end
-
-    def paste(text=nil)
-      system('pbpaste')
     end
   end
 end

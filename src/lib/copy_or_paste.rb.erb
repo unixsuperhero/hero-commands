@@ -1,9 +1,29 @@
 
+<%= inject_files 'src/lib/cmd_pipe.rb.erb' %>
+
 class CopyOrPaste
   class << self
     def copy(text, with_newline=false)
-      cmd = with_newline ? 'echo' : 'printf'
-      `#{cmd} '#{text.chomp}' | pbcopy`
+      cmdpipe = CmdPipe.new("printf '%s'" % text, 'pbcopy')
+      cmdpipe.start
+      cmdpipe.stop
+      # cmd = with_newline ? 'echo' : 'printf'
+      # `#{cmd} '#{text.chomp}' | pbcopy`
+      show_copied_text
+    end
+
+    def copy2(text)
+      cmdpipe = CmdPipe.new('printf "%s"' % text, 'pbcopy')
+      cmdpipe.start
+      puts
+      # cmdpipe.statuses
+      # sleep 1
+      puts
+      cmdpipe.stop
+    end
+
+    def show_copied_text
+      system(%{printf 'The text copied was: "%s"' "$(pbpaste)"})
     end
 
     def paste(text=nil)

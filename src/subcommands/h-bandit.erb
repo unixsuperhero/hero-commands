@@ -3,37 +3,62 @@ class BanditSubcommand < Subcommandable
     File.join(Dir.home, 'projects', 'bandit')
   }
 
-  def self.bandit_dir
-    File.join(Dir.home, 'projects', 'bandit')
-  end
+  let(:bandit_dir) { File.join(Dir.home, 'projects', 'bandit') }
+  let(:yaml_file) { File.join(bandit_dir, 'passwords.yml') }
+  let(:cd_to_dir) { Dir.chdir(bandit_dir) }
+  let(:config) { @config_file ||= Config.new(yaml_file, 'passwords') }
+  let(:next_game) { config.data.keys.map(&:to_i).max }
+  let(:password_for) {|game| config.data[game.to_i] }
+  let(:run_game) {|game| system('./bandit.exp', game.to_s, password_for(game)) }
 
-  def self.yaml_file
-    File.join(bandit_dir, 'passwords.yml')
-  end
-
-  def self.cd_to_dir
-    Dir.chdir(bandit_dir)
-  end
-
-  def self.config
-    @config_file ||= Config.new(yaml_file, 'passwords')
-  end
+  before{
+    puts format('pwd before cd: %s', Dir.pwd)
+    cd_to_dir
+    puts format('pwd after cd: %s', Dir.pwd)
+  }
 
   dynamic_subcommand {
-    cd_to_dir
-    game = subcommand
-    pw = config.data[game.to_i]
-    system './bandit.exp', game, pw
+    run_game subcommand
+    # game = subcommand
+    # pw = config.data[game.to_i]
+    # system './bandit.exp', game, pw
     exit 0
   }
 
+  register_subcommand(:host) {
+    printf 'bandit.labs.overthewire.org'
+  }
+
+  register_subcommand(:scp_from) {
+    game,src,dst = args.first(3)
+    pw = config.data[game.to_i]
+    `printf "#{pw}" | pbcopy; pbpaste`
+    cmd = format('scp "bandit%d@bandit.labs.overthewire.org:%s" "%s"', game, src, dst)
+    system(cmd)
+  }
+
+  register_subcommand(:scp_to) {
+    game,src,dst = args.first(3)
+    pw = config.data[game.to_i]
+    `printf "#{pw}" | pbcopy; pbpaste`
+    cmd = format('scp "%s" "bandit%d@bandit.labs.overthewire.org:%s"', src, game, dst)
+    system(cmd)
+  }
+
   register_subcommand(:pry) {
-    cd_to_dir
     binding.pry
   }
 
+  register_subcommand(:next) {
+    run_game next_game
+    # games = config.data.keys.map(&:to_i)
+    # next_game = games.max
+    # pw = config.data[next_game]
+    # system './bandit.exp', next_game, pw
+    exit 0
+  }
+
   register_subcommand(:list, :show) {
-    cd_to_dir
     ap passwords: config.data
   }
 
@@ -42,8 +67,15 @@ class BanditSubcommand < Subcommandable
     `printf '#{cmd}' | pbcopy`
   }
 
+  register_subcommand(:site) {
+    `open http://overthewire.org`
+  }
+
+  register_subcommand(:hint) {
+    `open http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html`
+  }
+
   register_subcommand(:password, :pw) {
-    cd_to_dir
     game,pw = args.first(2)
     config.merge(game.to_i => pw)
     # puts format('config saved: %s', config.data)
