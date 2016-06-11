@@ -46,7 +46,7 @@ class CmdPipe
   class CommandChain
     attr_accessor :shell_commands, :runners
     attr_accessor :reader, :writer
-    def new(cmds)
+    def initialize(cmds)
       @shell_commands = cmds
       @runners = cmds.map(&Runner.method(:new))
       @reader, @writer = IO.pipe
@@ -112,8 +112,8 @@ class CmdPipe
 
     def run
       exec
-      reader.close unless reader
-      writer.close unless writer
+      reader.close if reader
+      writer.close if writer
     end
   end
 end

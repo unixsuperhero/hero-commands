@@ -3,7 +3,7 @@
 class CmdPipe
   class << self
     def run(*args)
-      new(*args).tap{|runner| runner.run }
+      new(*args).tap{|cmd_pipe| cmd_pipe.run }
     end
 
     def output(*args)
@@ -16,116 +16,105 @@ class CmdPipe
   end
 
   attr_accessor :chain, :options
-  attr_accessor :reader, :writer
+  # attr_accessor :reader, :writer
   def initialize(*args)
     @options = args.last.is_a?(Hash) ? args.pop : {}
-    @chain = CommandChain.from_list(args.flatten) #.map{|cmd| Command.new(cmd) }
-    @reader, @writer = IO.pipe
+    @chain = CommandChain.new(args.flatten) #.map{|cmd| Command.new(cmd) }
+    # @reader, @writer = IO.pipe
     # @pipes = Pipe.from_commands(@commands)
   end
 
+  def shell_commands
+    chain.shell_commands
+  end
+
+  def runners
+    chain.runners
+  end
+
   def run
-    last_command = chain.last_command
-    last_command.writer = writer
-
     chain.run
-
-    reader.read.tap{|stdoutput|
-      reader.close
-      writer.close unless writer.closed?
-    }
   end
 
   def output
-    @output ||= run
+    chain.output
   end
 
   def print
-    puts output
+    chain.print
   end
 
   class CommandChain
-    class << self
-      attr_accessor :first_command, :last_command
-
-      def set_first_command(cmd)
-        @first_command = cmd
-      end
-
-      def set_last_command(cmd)
-        @last_command = cmd
-      end
-
-      def from_list(cmds)
-        cmds.reverse.inject(nil){|piping_to,shell_cmd|
-          new(shell_cmd, piping_to).tap do |precmd|
-            if piping_to
-              piping_to.precmd = precmd
-            else
-              set_last_command(precmd)
-            end
-          end
-        }.tap{|first_command|
-          set_first_command(first_command)
-          cmd = first_command
-          while cmd.subcmd
-            r,w = IO.pipe
-
-                   cmd.writer = w
-            cmd.subcmd.reader = r
-
-            cmd = cmd.subcmd
-          end
-        }
-      end
-    end
-
-    attr_accessor :shell_cmd, :subcmd, :precmd
+    attr_accessor :shell_commands, :runners
     attr_accessor :reader, :writer
-    def initialize(shell_cmd, to_cmd=nil, from_cmd=nil)
-      @shell_cmd, @subcmd, @precmd = shell_cmd, to_cmd, from_cmd
+    def initialize(cmds)
+      @shell_commands = cmds
+      @runners = cmds.map(&Runner.method(:new))
+      @reader, @writer = IO.pipe
+
+      assign_chain_and_position_to_runners
+      assign_io_for_each_pipe
     end
 
-    def first
-      first_command
+    def assign_chain_and_position_to_runners
+      runners.each_with_index{|runner,idx|
+        runner.chain = self
+        runner.position = idx
+      }
     end
 
-    def last
-      last_command
+    def assign_io_for_each_pipe
+      runners.each_cons(2){|write_to,read_from|
+        r,w = IO.pipe
+        write_to.writer = w
+        read_from.reader = r
+      }
+
+      runners.last.writer = writer
     end
 
-    def last_command
-      @last_command ||= subcmd ? subcmd.last_command : self
+    def run
+      @output ||= begin
+                    runners.each(&:run)
+                    reader.read.tap{|std_out|
+                      reader.close
+                    }
+                  end
     end
 
-    def first_command
-      @first_command ||= precmd ? precmd.first_command : self
+    def output
+      run
     end
 
-    def to_a
-      @to_array ||= [first_command].tap do |list|
-        while list.last.subcmd
-          list.push list.last.subcmd
-        end
-      end
+    def print
+      puts output
+    end
+  end
+
+  class Runner
+    attr_accessor :shell_command
+    attr_accessor :reader, :writer
+    attr_accessor :chain, :position
+
+    def initialize(cmd)
+      @shell_command = cmd
     end
 
-    def position
-      to_a.index(self) + 1
+    def build_options
+      {}.tap{|opts|
+        opts.merge!(in: reader) if reader
+        opts.merge!(out: writer) if writer
+      }
     end
 
     def exec
-      opts = {}
-      opts.merge!(in: reader) if reader
-      opts.merge!(out: writer) if writer
-      system(shell_cmd, opts)
+      system(shell_command, build_options)
     end
 
     def run
       exec
       reader.close if reader
       writer.close if writer
-      subcmd.run if subcmd
     end
   end
 end
