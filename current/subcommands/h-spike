@@ -1,7 +1,7 @@
 
 class SpikeSubcommand < Subcommandable
   let(:spike_dir) { File.join(Dir.home, 'spikes') }
-  let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&:directory?).map(&:basename).sort }
+  let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&File.method(:directory?)).map(&File.method(:basename)).sort }
   let(:last_spike) { spikes.map(&:to_i).max }
   let(:fmt) { '%05d' }
   let(:next_num) { last_spike.to_i + 1 }
