@@ -1,0 +1,45 @@
+
+class SpikeSubcommand < Subcommandable
+  let(:spike_dir) { File.join(Dir.home, 'spikes') }
+  let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&:directory?).map(&:basename).sort }
+  let(:last_spike) { spikes.map(&:to_i).max }
+  let(:fmt) { '%05d' }
+  let(:next_num) { last_spike.to_i + 1 }
+  let(:next_name) { format(fmt, next_num) }
+  let(:next_dir) { File.join(spike_dir, next_name) }
+
+  let(:tmux_session_exists?) { |name|
+    `tmux ls`.lines.any?{|l| l[/^#{name}:/] }
+  }
+
+  let(:attach_to_tmux_session) { |name|
+    exec("tmux a -t #{name}")
+  }
+
+  let(:start_new_tmux_session) { |name, path|
+    exec("tmux new -s #{name} -c #{path}")
+  }
+
+  register_subcommand(:list) {
+    puts spikes
+  }
+
+  register_subcommand(:new, :start) {
+    next_spike = next_num
+    next_spike_name = next_name
+    next_spike_dir = next_dir
+
+    spike_session_name = 'spike%s' % next_spike_name
+
+    `mkdir -pv "#{next_spike_dir}"`
+
+    tmux_session_exists?(spike_session_name) ?
+      attach_to_tmux_session(spike_session_name) :
+      start_new_tmux_session(spike_session_name, next_spike_dir)
+  }
+end
+
+MainCommand.register_subcommand(:spike) {
+  SpikeSubcommand.run(MainCommand.args)
+}
+

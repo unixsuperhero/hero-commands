@@ -450,12 +450,9 @@ class CmdPipe
   end
 
   attr_accessor :chain, :options
-  # attr_accessor :reader, :writer
   def initialize(*args)
     @options = args.last.is_a?(Hash) ? args.pop : {}
     @chain = CommandChain.new(args.flatten) #.map{|cmd| Command.new(cmd) }
-    # @reader, @writer = IO.pipe
-    # @pipes = Pipe.from_commands(@commands)
   end
 
   def shell_commands
