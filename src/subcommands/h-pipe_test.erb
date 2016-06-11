@@ -1,0 +1,34 @@
+
+class PipeForkSubcommand < Subcommandable
+  register_subcommand(:fork) {
+    runner = CmdPipeUsingFork.new('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
+    runner.run
+  }
+
+  register_subcommand(:test){
+    reader, writer = IO.pipe
+    fork do
+      reader.close
+
+      puts 'inside the fork'
+      writer.write('Hello from your child!')
+      writer.close
+    end
+
+    puts 'outside the fork, closing the writer'
+    writer.close
+
+    puts 'waiting for the process to end...'
+    Process.wait
+
+    puts 'reading from reader'
+    message = reader.read
+    puts format('outside fork: reading message => "%s"', message)
+    reader.close
+  }
+end
+
+MainCommand.register_subcommand(:pipe_test) {
+  PipeForkSubcommand.run(MainCommand.args)
+}
+
