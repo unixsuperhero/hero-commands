@@ -1,5 +1,13 @@
 
 class PipeForkSubcommand < Subcommandable
+  register_subcommand(:array) {
+    pipe = CmdPipe.new('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
+    ap first_cmd: pipe.chain.first,
+      last_cmd: pipe.chain.last,
+      pipe_array: pipe.chain.to_a,
+      positions: pipe.chain.to_a.map(&:position)
+  }
+
   register_subcommand(:run) {
     CmdPipe.run('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
   }

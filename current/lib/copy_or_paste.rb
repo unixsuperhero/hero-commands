@@ -3,7 +3,7 @@
 class CmdPipe
   class << self
     def run(*args)
-      new(*args).run
+      new(*args).tap{|runner| runner.run }
     end
 
     def output(*args)
@@ -15,20 +15,20 @@ class CmdPipe
     end
   end
 
-  attr_accessor :commands, :pipes, :options
+  attr_accessor :chain, :options
   attr_accessor :reader, :writer
   def initialize(*args)
     @options = args.last.is_a?(Hash) ? args.pop : {}
-    @commands = CommandChain.from_list(args.flatten) #.map{|cmd| Command.new(cmd) }
+    @chain = CommandChain.from_list(args.flatten) #.map{|cmd| Command.new(cmd) }
     @reader, @writer = IO.pipe
     # @pipes = Pipe.from_commands(@commands)
   end
 
   def run
-    last_command = commands.last_command
+    last_command = chain.last_command
     last_command.writer = writer
 
-    commands.run
+    chain.run
 
     reader.read.tap{|stdoutput|
       reader.close
@@ -68,11 +68,12 @@ class CmdPipe
         }.tap{|first_command|
           set_first_command(first_command)
           cmd = first_command
-          r,w = nil,nil
           while cmd.subcmd
             r,w = IO.pipe
-            cmd.writer = w
+
+                   cmd.writer = w
             cmd.subcmd.reader = r
+
             cmd = cmd.subcmd
           end
         }
@@ -85,8 +86,32 @@ class CmdPipe
       @shell_cmd, @subcmd, @precmd = shell_cmd, to_cmd, from_cmd
     end
 
+    def first
+      first_command
+    end
+
+    def last
+      last_command
+    end
+
     def last_command
-      subcmd ? subcmd.last_command : self
+      @last_command ||= subcmd ? subcmd.last_command : self
+    end
+
+    def first_command
+      @first_command ||= precmd ? precmd.first_command : self
+    end
+
+    def to_a
+      @to_array ||= [first_command].tap do |list|
+        while list.last.subcmd
+          list.push list.last.subcmd
+        end
+      end
+    end
+
+    def position
+      to_a.index(self) + 1
     end
 
     def exec
@@ -100,9 +125,7 @@ class CmdPipe
       exec
       reader.close if reader
       writer.close if writer
-      if subcmd
-        subcmd.run
-      end
+      subcmd.run if subcmd
     end
   end
 end
