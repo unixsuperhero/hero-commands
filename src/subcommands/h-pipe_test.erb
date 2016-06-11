@@ -1,8 +1,11 @@
 
 class PipeForkSubcommand < Subcommandable
-  register_subcommand(:fork) {
-    runner = CmdPipeUsingFork.new('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
-    runner.run
+  register_subcommand(:run) {
+    CmdPipe.run('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
+  }
+
+  register_subcommand(:print) {
+    CmdPipe.print('cat /Users/hiro/projects.yml', 'cat -n', 'sed "s/^/:>/"')
   }
 
   register_subcommand(:test){

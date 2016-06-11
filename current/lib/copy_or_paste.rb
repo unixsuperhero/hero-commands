@@ -1,6 +1,20 @@
 
 
 class CmdPipe
+  class << self
+    def run(*args)
+      new(*args).run
+    end
+
+    def output(*args)
+      new(*args).output
+    end
+
+    def print(*args)
+      new(*args).print
+    end
+  end
+
   attr_accessor :commands, :pipes, :options
   attr_accessor :reader, :writer
   def initialize(*args)
@@ -16,8 +30,8 @@ class CmdPipe
 
     commands.run
 
-    reader.read.tap{|r|
-      r.close
+    reader.read.tap{|stdoutput|
+      reader.close
       writer.close unless writer.closed?
     }
   end
@@ -98,22 +112,10 @@ end
 class CopyOrPaste
   class << self
     def copy(text, with_newline=false)
-      cmdpipe = CmdPipe.new("printf '%s'" % text, 'pbcopy')
-      cmdpipe.start
-      cmdpipe.stop
+      CmdPipe.run("printf '%s'" % text, 'pbcopy')
       # cmd = with_newline ? 'echo' : 'printf'
       # `#{cmd} '#{text.chomp}' | pbcopy`
       show_copied_text
-    end
-
-    def copy2(text)
-      cmdpipe = CmdPipe.new('printf "%s"' % text, 'pbcopy')
-      cmdpipe.start
-      puts
-      # cmdpipe.statuses
-      # sleep 1
-      puts
-      cmdpipe.stop
     end
 
     def show_copied_text
