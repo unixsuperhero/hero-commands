@@ -3,10 +3,11 @@
 require 'awesome_print'
 require 'pry'
 require 'yaml'
+require 'shell'
 
 <%= inject_files 'src/lib/hash_ext.rb.erb', 'src/lib/config.rb.erb',
   'src/lib/subcommandable.rb.erb', 'src/lib/path_env.rb.erb',
-  'src/lib/hero_helper.rb.erb', 'src/lib/copy_or_paste.rb.erb' %>
+  'src/lib/hero_helper.rb.erb' %>
 
 class MainCommand < Subcommandable
 
