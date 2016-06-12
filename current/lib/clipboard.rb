@@ -2,11 +2,7 @@
 class Clipboard
   class << self
     def copy(text, with_newline=false)
-      # CmdPipe.run("printf '%s'" % text, 'pbcopy')
       Shell.new.transact{|sh| sh.system('printf', text) | sh.system('pbcopy') }
-      # cmd = with_newline ? 'echo' : 'printf'
-      # `#{cmd} '#{text.chomp}' | pbcopy`
-      # show_copied_text
     end
 
     def show_copied_text
