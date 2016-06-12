@@ -238,3 +238,6 @@ class Subcommandable
     end
   end
 end
+
+
+# vim: ft=ruby

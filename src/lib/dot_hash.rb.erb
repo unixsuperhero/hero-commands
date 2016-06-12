@@ -56,3 +56,6 @@ class DotHash
     end
   end
 end
+
+
+# vim: ft=ruby
