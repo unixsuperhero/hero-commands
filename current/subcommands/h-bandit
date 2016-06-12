@@ -88,3 +88,6 @@ MainCommand.register_subcommand(:bandit) {
   BanditSubcommand.run(MainCommand.args)
 }
 
+
+
+# vim: ft=ruby

@@ -54,3 +54,6 @@ class Hash
     self
   end
 end
+
+
+# vim: ft=ruby

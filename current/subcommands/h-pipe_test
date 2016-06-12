@@ -42,3 +42,6 @@ MainCommand.register_subcommand(:pipe_test) {
   PipeForkSubcommand.run(MainCommand.args)
 }
 
+
+
+# vim: ft=ruby

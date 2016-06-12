@@ -224,3 +224,6 @@ MainCommand.register_subcommand(:git) {
   GitSubcommand.run(MainCommand.args)
 }
 
+
+
+# vim: ft=ruby

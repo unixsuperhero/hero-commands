@@ -9,3 +9,6 @@ MainCommand.register_subcommand(:tmux) {
   TmuxSubcommand.run(MainCommand.args)
 }
 
+
+
+# vim: ft=ruby

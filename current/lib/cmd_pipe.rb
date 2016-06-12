@@ -115,3 +115,4 @@ class CmdPipe
   end
 end
 
+# vim: ft=ruby

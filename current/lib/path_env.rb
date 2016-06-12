@@ -40,3 +40,6 @@ class PathEnv
     end
   end
 end
+
+
+# vim: ft=ruby

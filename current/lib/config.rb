@@ -58,6 +58,8 @@ class Hash
 end
 
 
+# vim: ft=ruby
+
 class Config
   attr_accessor :file, :data_path
 
@@ -125,3 +127,6 @@ class Config
     }
   end
 end
+
+
+# vim: ft=ruby

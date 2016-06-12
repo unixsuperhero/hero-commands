@@ -127,3 +127,6 @@ end
 
 RipperPlugin.load_plugins_by_prefix('h-rip')
 
+
+
+# vim: ft=ruby

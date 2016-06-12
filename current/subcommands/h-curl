@@ -74,3 +74,6 @@ MainCommand.register_subcommand(:curl) {
 }
 
 
+
+
+# vim: ft=ruby

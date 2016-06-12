@@ -9,7 +9,7 @@ class PathSubcommand < Subcommandable
     error_exit('at least 1 arg is required to append to $PATH') if args.empty?
 
     output = format('export PATH=$PATH:%s', args.join(?:))
-    CopyOrPaste.copy(output)
+    Clipboard.copy(output)
     puts output
   }
 
@@ -17,7 +17,7 @@ class PathSubcommand < Subcommandable
     error_exit('at least 1 arg is required to prepend to $PATH') if args.empty?
 
     output = format('export PATH=%s:$PATH', args.join(?:))
-    CopyOrPaste.copy(output)
+    Clipboard.copy(output)
     puts output
   }
 
@@ -40,3 +40,6 @@ MainCommand.register_subcommand(:path) {
   PathSubcommand.run(MainCommand.args)
 }
 
+
+
+# vim: ft=ruby

@@ -12,3 +12,6 @@ class HeroHelper
     end
   end
 end
+
+
+# vim: ft=ruby

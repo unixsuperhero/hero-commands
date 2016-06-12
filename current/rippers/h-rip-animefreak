@@ -91,3 +91,6 @@ class AnimefreakRipper < RipperPlugin
     end
   end
 end
+
+
+# vim: ft=ruby
