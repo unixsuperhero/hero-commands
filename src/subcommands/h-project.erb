@@ -1,11 +1,251 @@
 
-# class ProjectSubcommand < Subcommandable
-# end
+<%= inject_files 'src/lib/git.rb.erb' %>
 
-# MainCommand.register_subcommand(:project) {
-#   ProjectSubcommand.run(MainCommand.args)
-# }
+class ProjectSubcommand < Subcommandable
+  dynamic_subcommand{
+    ByProject.run(args.unshift(subcommand))
+  }
+
+  list_projects = Proc.new{|args|
+    Config.for( File.join(ENV['HOME'], 'projects.yml') )['projects'].map{|p|
+      p['name']
+    }.tap(&method(:puts))
+  }
+
+  register_subcommand :all, &list_projects
+  register_subcommand :list, &list_projects
+  register_subcommand :show, &list_projects
+  register_subcommand :print, &list_projects
+
+  register_subcommand :dir do
+    projects = Config.for(File.join(ENV['HOME'],'projects.yml'))
+
+    project = projects['projects'].find{|p|
+      p['name'] == args.first
+    }
+
+    unless project
+      puts format('Project "%s" Not Found', args.first)
+      exit 1
+    end
+
+    printf project['path']
+    exit 0
+  end
+
+  register_subcommand :add do
+    projects = Config.for(File.join(ENV['HOME'],'projects.yml'))
+
+    name,path,other = args
+    projects['projects'].push({
+      'name' => name,
+      'path' => path || Dir.pwd
+    })
+    projects.save
+  end
+
+  register_subcommand :issues do
+    Issues.run(args)
+  end
+
+  register_subcommand :branch do
+    Branches.run(args)
+  end
+
+  register_subcommand :feature do
+    Features.run(args)
+  end
+
+  class ByProject < Subcommandable
+    def self.project_file
+      File.join(ENV['HOME'], 'projects.yml')
+    end
+
+    def self.project_config
+      @project_config ||= Config.for(project_file)
+    end
+
+    def self.project_matcher
+      name_map = project_config.projects.map{|p| [p['name'], p] }.to_h
+      @project_matcher = SubcommandMatcher.new(name_map)
+    end
+
+    def self.matching_project(name)
+      project_matcher.match(name)
+    end
+
+    def self.tmux_session_exists?(name)
+      `tmux ls`.lines.any?{|l| l[/^#{name}:/] }
+    end
+
+    def self.attach_to_tmux_session(name)
+      exec("tmux a -t #{name}")
+    end
+
+    def self.start_new_tmux_session(proj)
+      exec("tmux new -s #{proj['name']} -c #{proj['path']} " + args.join(' '))
+    end
+
+    default_handler{
+      project_name = subcommand
+      proj = matching_project(project_name)
+      if proj
+        tmux_session_exists?(proj['name']) ?
+          attach_to_tmux_session(proj['name']) :
+          start_new_tmux_session(proj)
+      end
+    }
+  end
+
+  class Features < Subcommandable
+    register_subcommand(:start) {
+      if args.first.to_i == 0
+        <<-"MESSAGE"
+
+  The next argument after start should be the
+  issue number, followed by a few words
+  describing it.
+
+        MESSAGE
+        exit 1
+      end
+
+      # check_for_active_feature
+      checkout_development_base_branch
+      rebase_branch
+      checkout_new_feature_branch
+      save_feature_info_in_project_yml
+    }
+
+    def self.checkout_development_base_branch
+      `git checkout develop`
+    end
+
+    def self.rebase_branch
+      `git pull --rebase origin develop`
+    end
+
+    def self.checkout_new_feature_branch
+      `git checkout -b feature/#{args.join(?-)}`
+    end
+
+    def self.save_feature_info_in_project_yml
+      #config = Config.for('project.local.yml')
+      config = Config.for('project.local.yml')
+      config.current_issue_id = args.first
+      config.current_feature_branch = format('feature/%s', args.join(?-))
+      ap config: config,
+         config_data: config.config_data,
+         bytes_saved: config.save
+    end
+
+    register_subcommand(:push) {
+      ap feature: :push, args: args
+    }
+
+    register_subcommand(:rebase) {
+      ap feature: :rebase, args: args
+    }
+
+    def self.project_config
+      @project_config ||= Config.for('project.yml')
+    end
+
+    def self.local_config
+      @local_config ||= Config.for('project.local.yml')
+    end
+
+    def self.heroku_app_data(remote:, branch:, issue:)
+      {
+        'remote_name' => remote,
+        'branch' => branch,
+        'issue_number' => issue.to_i,
+      }
+    end
+
+    register_subcommand(:test) {
+      ap feature: :test, args: args
+      remote_name = Heroku.qa_remote_name(project_config.name, local_config.current_feature_branch)
+      feature_apps = local_config.feature_apps || []
+      app = heroku_app_data(remote: remote_name, branch: local_config.current_feature_branch, issue: local_config.current_feature_id)
+      branch = local_config.current_feature_branch
+
+      app_fork = remote_name[0,30]
+
+      if Heroku.apps.include?(app_fork)
+        system *%W[ heroku apps:destroy --app #{app_fork} --confirm #{app_fork} ]
+        #system *%W[ git push #{app_fork} #{branch}:master ]
+        #system *%W[ heroku run rake db:migrate -r #{app_fork} ]
+      end
 
 
+      if system *%W[heroku fork --from copley-staging --to #{app_fork}]
+          unless feature_apps.include?(app)
+            feature_apps.unshift(app)
+          local_config.feature_apps = feature_apps || []
+            local_config.save
+          end
+        system *%W[ git remote add #{app_fork} https://git.heroku.com/#{app_fork}.git]
+        system *%W[ git push #{app_fork} #{branch}:master ]
+        system *%W[ heroku run rake db:migrate -r #{app_fork} ]
+      end
+    }
+
+    register_subcommand(:finish) {
+      ap feature: :finish, args: args
+
+
+      remote_name = Heroku.qa_remote_name(project_config.name, local_config.current_feature_branch)
+      feature_apps = local_config.feature_apps || []
+      app = heroku_app_data(remote: remote_name, branch: local_config.current_feature_branch, issue: local_config.current_feature_id)
+      branch = local_config.current_feature_branch
+
+      app_fork = remote_name[0,30]
+
+      system *%W[ git branch backup/#{Git.branch_base} #{branch} ]
+      system *%W[ git checkout develop ]
+      system *%W[ git pull --rebase -p origin develop ]
+      system *%W[ git checkout #{branch} ]
+      system *%W[ git rebase -p develop ]
+      system *%W[ git checkout develop ]
+      system *%W[ git merge --no-ff #{branch} ]
+    }
+
+    register_subcommand(:pause) {
+      ap feature: :pause, args: args
+    }
+  end
+
+  class Branches < Subcommandable
+    register_subcommand(:link) {
+      puts format('called branch:link with %s and %s', subcommand, args[0])
+    }
+
+    register_subcommand(:list) {
+      puts `git branch`.lines.map{|line|
+        line.chomp.sub(/^../,'')
+      }.sort.uniq
+    }
+
+    default_handler {
+      printf Git.current_branch
+      exit 0
+    }
+  end
+
+  class Issues < Subcommandable
+    register_subcommand(:list) {
+      system('ghi', 'list')
+    }
+
+    default_handler {
+      system('ghi', 'list')
+    }
+  end
+end
+
+MainCommand.register_subcommand(:project) {
+  ProjectSubcommand.run(MainCommand.args)
+}
 
 # vim: ft=ruby
