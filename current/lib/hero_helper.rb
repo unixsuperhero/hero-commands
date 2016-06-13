@@ -8,6 +8,16 @@ class HeroHelper
       args.flatten.shelljoin
     end
 
+    def mkdirs_for_file(file)
+      return false if File.exist?(file)
+      mkdirs File.dirname(file)
+    end
+
+    def mkdirs(dir_only)
+      return false if File.exist?(dir_only)
+      system cmd_from('mkdir', '-pv', dir_only)
+    end
+
     def editor
       ENV.fetch('EDITOR', 'vim')
     end

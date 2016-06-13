@@ -21,7 +21,9 @@ class AnimefreakRipper < RipperPlugin
       @dir = File.join(Dir.home, 'dl', 'animefreak')
       @dir = File.join(@dir, destination) if destination
       @dir.tap{|d|
-        `mkdir -pv "#{d}"` unless File.directory?(d)
+        HeroHelper.mkdirs(d)
+        # cmd = HeroHelper.cmd_from('mkdir', '-pv', d)
+        # system(cmd) unless File.directory?(d)
       }
     end
 
@@ -66,8 +68,12 @@ class AnimefreakRipper < RipperPlugin
 
         if link
           puts format('link: %s', link)
+          cmd = HeroHelper.cmd_from('wget', '-c',
+                                    '--referer=%s' % mp4_mirror,
+                                    link, '-O', outfile)
+
           4.times do
-            system(format('wget -c --referer="%s" "%s" -O "%s"', mp4_mirror, link, outfile))
+            system(cmd)
             break if $?.success?
           end
         end
