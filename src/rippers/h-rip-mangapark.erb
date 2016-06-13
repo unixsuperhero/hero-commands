@@ -33,7 +33,8 @@ class MangaparkRipper < RipperPlugin
       @dir = File.join(Dir.home, 'dl', 'mangapark')
       @dir = File.join(@dir, destination) if destination
       @dir.tap{|d|
-        `mkdir -pv "#{d}"` unless File.directory?(d)
+        HeroHelper.mkdirs(d)
+        # `mkdir -pv "#{d}"` unless File.directory?(d)
       }
     end
 

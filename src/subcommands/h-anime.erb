@@ -98,7 +98,13 @@ class AnimeSubcommand < Subcommandable
     cd_if_series_matches_arg
 
     exit 1 unless File.exist?('watched.grep')
-    system(format('ls -1 | egrep -vf watched.grep | head -1'))
+    output = Shell.new.transact{|sh|
+      sh.system('ls -1') | sh.system('egrep -vf watched.grep') | sh.system('head -1')
+    }
+
+    puts
+    puts format('Output from Shell Transaction: "%s"', output)
+    # system(format('ls -1 | egrep -vf watched.grep | head -1'))
     exit 0
     # open the next episode and add it to the watched_episodes.grep file
   }
@@ -136,7 +142,7 @@ class AnimeSubcommand < Subcommandable
     watched_patterns.push FilenameToGrepConverter.for(next_episode)
     IO.write('watched.grep', watched_patterns.join("\n"))
 
-    exec('open', next_episode)
+    exec(HeroHelper.cmd_from('open', next_episode))
   }
 
   register_subcommand(:series){

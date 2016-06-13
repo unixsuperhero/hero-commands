@@ -9,7 +9,7 @@ class BanditSubcommand < Subcommandable
   let(:config) { @config_file ||= Config.new(yaml_file, 'passwords') }
   let(:next_game) { config.data.keys.map(&:to_i).max }
   let(:password_for) {|game| config.data[game.to_i] }
-  let(:run_game) {|game| system('./bandit.exp', game.to_s, password_for(game)) }
+  let(:run_game) {|game| system(HeroHelper.cmd_from('./bandit.exp', game.to_s, password_for(game))) }
 
   before{
     puts format('pwd before cd: %s', Dir.pwd)
@@ -32,16 +32,21 @@ class BanditSubcommand < Subcommandable
   register_subcommand(:scp_from) {
     game,src,dst = args.first(3)
     pw = config.data[game.to_i]
-    `printf "#{pw}" | pbcopy; pbpaste`
-    cmd = format('scp "bandit%d@bandit.labs.overthewire.org:%s" "%s"', game, src, dst)
+    Clipboard.copy(pw)
+    Clipboard.show_copied_text
+    # `printf "#{pw}" | pbcopy; pbpaste`
+    cmd = HeroHelper.cmd_from('scp', 'bandit%d@bandit.labs.overthewire.org:%s' % [game, src], dst)
     system(cmd)
   }
 
   register_subcommand(:scp_to) {
     game,src,dst = args.first(3)
     pw = config.data[game.to_i]
-    `printf "#{pw}" | pbcopy; pbpaste`
-    cmd = format('scp "%s" "bandit%d@bandit.labs.overthewire.org:%s"', src, game, dst)
+    # `printf "#{pw}" | pbcopy; pbpaste`
+    # cmd = format('scp "%s" "bandit%d@bandit.labs.overthewire.org:%s"', src, game, dst)
+    Clipboard.copy(pw)
+    Clipboard.show_copied_text
+    cmd = HeroHelper.cmd_from('scp', src, 'bandit%d@bandit.labs.overthewire.org:%s' % [game, dst])
     system(cmd)
   }
 
@@ -64,15 +69,19 @@ class BanditSubcommand < Subcommandable
 
   register_subcommand(:localhost) {
     cmd = %{nextgame=$(( $(whoami | egrep -o "[0-9]+") + 1 )); ssh localhost -l "bandit${nextgame}"}
-    `printf '#{cmd}' | pbcopy`
+    Clipboard.copy(cmd)
+    Clipboard.show_copied_text
+    # `printf '#{cmd}' | pbcopy`
   }
 
   register_subcommand(:site) {
-    `open http://overthewire.org`
+    exec(HeroHelper.cmd_from('open', 'http://overthewire.org'))
+    # `open http://overthewire.org`
   }
 
   register_subcommand(:hint) {
-    `open http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html`
+    # `open http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html`
+    exec(HeroHelper.cmd_from('open', "http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html"))
   }
 
   register_subcommand(:password, :pw) {
