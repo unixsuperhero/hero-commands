@@ -1,5 +1,21 @@
 class HeroHelper
   class << self
+    def string_to_underscores(str)
+      str.split(/[\s_-]+/).flat_map{|part|
+        part.split(/(?<=[a-z])(?=[A-Z])/)
+      }.flat_map{|part|
+        part.split(/(?<=[A-Z])(?=[A-Z][a-z])/)
+      }.map(&:downcase).join(?_)
+    end
+
+    def string_to_classname(str)
+      string = str.to_s
+			string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
+      string.gsub!(/(?:_|(\/))([a-z\d]*)/i) { "#{$1}#{$2.capitalize}" }
+      string.gsub!('/'.freeze, '::'.freeze)
+      string
+    end
+
     def edit_in_editor(*args)
       exec cmd_from(args.unshift(editor))
     end

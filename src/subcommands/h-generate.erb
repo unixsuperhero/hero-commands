@@ -1,0 +1,54 @@
+
+class GenerateSubcommand < Subcommandable
+  let(:subcommand_template) {
+    <<-"TEMPLATE"
+class %<classified>sSubcommand < Subcommandable
+  register_subcommand(:example) do
+    puts 'this is an example'
+  end
+end
+
+MainCommand.register_subcommand(:%<underscored>s) {
+  %<classified>sSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby
+    TEMPLATE
+  }
+
+  let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
+  let(:src_dir) { File.join(base_dir, 'src') }
+  let(:subcommands_dir) { File.join(src_dir, 'subcommands') }
+
+  register_subcommand(:subcommand, :subcmd) do
+    error_exit('A subcommand name is required as an argument...') if args.empty?
+
+    base_name = args.first
+    vals = {
+      classified: HeroHelper.string_to_classname(base_name),
+      underscored: HeroHelper.string_to_underscores(base_name),
+    }
+
+    erb_file = format('h-%s.erb', base_name)
+    outfile = File.join(subcommands_dir, erb_file)
+    bytes_written = IO.write(outfile, format(subcommand_template, vals))
+
+    ap base_name: base_name,
+      erb_file: erb_file,
+      outfile: outfile,
+      bytes_written: bytes_written,
+      vals: vals
+  end
+
+  register_subcommand(:bin) do
+  end
+
+  register_subcommand(:lib) do
+  end
+end
+
+MainCommand.register_subcommand(:generate) {
+  GenerateSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby

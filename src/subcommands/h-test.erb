@@ -1,0 +1,16 @@
+
+class TestSubcommand < Subcommandable
+  register_subcommand(:underscorify) do
+    puts args.map(&HeroHelper.method(:string_to_underscores))
+  end
+
+  register_subcommand(:classify) do
+    puts args.map(&HeroHelper.method(:string_to_classname))
+  end
+end
+
+MainCommand.register_subcommand(:test) {
+  TestSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby
