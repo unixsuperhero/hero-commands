@@ -1,16 +1,44 @@
+
+class HeroSrcSubcommand < Subcommandable
+  let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
+  let(:src_dir) { File.join(base_dir, 'src') }
+  let(:editor) { ENV['EDITOR'] || 'vim' }
+
+  register_subcommand(:search) do
+    Dir.chdir(base_dir)
+    all_files = Dir[File.join('src', format('**/*'))].select(&File.method(:file?))
+    puts args.inject(all_files){|files,arg|
+      regexp = Regexp.new(arg, ?i)
+      files.select{|f|
+        f[regexp]
+      }
+    }.sort.uniq
+  end
+
+  register_subcommand(:edit) do
+    Dir.chdir(base_dir)
+    all_files = Dir[File.join('src', format('**/*'))].select(&File.method(:file?))
+    matches = args.inject(all_files){|files,arg|
+      regexp = Regexp.new(arg, ?i)
+      files.select{|f|
+        f[regexp]
+      }
+    }.sort.uniq
+
+    Shell.new(base_dir).transact{|sh|
+      editor = ENV['EDITOR'] || 'vim'
+      sh.system(editor, *matches)
+    }
+  end
+end
+
 class HeroSubcommand < Subcommandable
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
   let(:src_dir) { File.join(base_dir, 'src') }
 
-  # class << self
-  #   def base_dir
-  #     File.join(Dir.home, 'projects', 'hero-commands')
-  #   end
-
-  #   def src_dir
-  #     File.join(base_dir, 'src')
-  #   end
-  # end
+  register_subcommand(:src) {
+    HeroSrcSubcommand.run(args)
+  }
 
   register_subcommand(:bins) {
     HeroHelper.run_inside_dir(src_dir) {
