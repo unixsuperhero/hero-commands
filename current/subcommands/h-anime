@@ -80,8 +80,9 @@ class AnimeSubcommand < Subcommandable
 
   register_subcommand(:init){
     IO.write('watched.grep', 'watched.grep' + "\n") unless File.exist?('watched.grep')
-    system(ENV['EDITOR'] || 'vim', 'watched.grep')
-    exit 0
+    HeroHelper.edit_in_editor('watched.grep')
+    # system(HeroHelper.editor, 'watched.grep')
+    # exit 0
   }
 
   register_subcommand(:patterns){
@@ -357,7 +358,7 @@ module FindPatternsInFilenames
 
     def edit_script
       cd_to dir
-      system('vim', File.basename(scriptfile(false)))
+      HeroHelper.edit_in_editor(File.basename(scriptfile(false)))
       cd_to pwd
     end
 
