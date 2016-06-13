@@ -75,13 +75,14 @@ class BanditSubcommand < Subcommandable
   }
 
   register_subcommand(:site) {
-    exec(HeroHelper.cmd_from('open', 'http://overthewire.org'))
+    HeroHelper.exec_from('open', 'http://overthewire.org')
+    # exec(HeroHelper.cmd_from('open', 'http://overthewire.org'))
     # `open http://overthewire.org`
   }
 
   register_subcommand(:hint) {
     # `open http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html`
-    exec(HeroHelper.cmd_from('open', "http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html"))
+    HeroHelper.exec_from('open', "http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html")
   }
 
   register_subcommand(:password, :pw) {

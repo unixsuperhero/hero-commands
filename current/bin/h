@@ -428,12 +428,51 @@ end
 # vim: ft=ruby
 class HeroHelper
   class << self
+    def string_to_underscores(str)
+      str.split(/[\s_-]+/).flat_map{|part|
+        part.split(/(?<=[a-z])(?=[A-Z])/)
+      }.flat_map{|part|
+        part.split(/(?<=[A-Z])(?=[A-Z][a-z])/)
+      }.map(&:downcase).join(?_)
+    end
+
+    def string_to_classname(str)
+      string = str.to_s
+			string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
+      string.gsub!(/(?:_|(\/))([a-z\d]*)/i) { "#{$1}#{$2.capitalize}" }
+      string.gsub!('/'.freeze, '::'.freeze)
+      string
+    end
+
     def edit_in_editor(*args)
       exec cmd_from(args.unshift(editor))
     end
 
     def cmd_from(*args)
-      args.flatten.shelljoin
+      parts = args.flatten
+
+      if parts.first[/\w\s+--?\w/i]
+        cmd_with_options = parts.shift
+        start_cmd = Shellwords.split(cmd_with_options)
+        parts = start_cmd + parts
+      end
+
+      parts.shelljoin
+    end
+
+    def system_from(*args)
+      system cmd_from(*args)
+    end
+
+    def exec_from(*args)
+      exec cmd_from(*args)
+    end
+
+    def output_from(*args)
+      r,w = IO.pipe
+      system cmd_from(*args, out: w)
+      w.close
+      r.read.tap{|output| r.close }
     end
 
     def mkdirs_for_file(file)
