@@ -1,13 +1,16 @@
 class HeroSubcommand < Subcommandable
-  class << self
-    def base_dir
-      File.join(Dir.home, 'projects', 'hero-commands')
-    end
+  let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
+  let(:src_dir) { File.join(base_dir, 'src') }
 
-    def src_dir
-      File.join(base_dir, 'src')
-    end
-  end
+  # class << self
+  #   def base_dir
+  #     File.join(Dir.home, 'projects', 'hero-commands')
+  #   end
+
+  #   def src_dir
+  #     File.join(base_dir, 'src')
+  #   end
+  # end
 
   register_subcommand(:bins) {
     HeroHelper.run_inside_dir(src_dir) {
