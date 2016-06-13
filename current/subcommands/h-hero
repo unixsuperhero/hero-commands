@@ -1,34 +1,42 @@
 
 class HeroSrcSubcommand < Subcommandable
+  before{ Dir.chdir(base_dir) }
+
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
   let(:src_dir) { File.join(base_dir, 'src') }
 
-  register_subcommand(:search) do
-    Dir.chdir(base_dir)
-    all_files = Dir[File.join('src', format('**/*'))].select(&File.method(:file?))
-    puts args.inject(all_files){|files,arg|
+  let(:src_files) { Dir[File.join('src', format('**/*'))].select(&File.method(:file?)) }
+
+  let(:filtered_src_files) {
+    args.inject(src_files){|files,arg|
       regexp = Regexp.new(arg, ?i)
       files.select{|f|
         f[regexp]
       }
     }.sort.uniq
+  }
+
+  let(:hsrc_files) { HeroHelper.files_in_dir('src') }
+
+  let(:hfiltered_src_files) {
+    args.inject(hsrc_files){|files,arg|
+      regexp = Regexp.new(arg, ?i)
+      files.select{|f|
+        f[regexp]
+      }
+    }.sort.uniq
+  }
+
+  register_subcommand(:search) do
+    puts filtered_src_files
+  end
+
+  register_subcommand(:hsearch) do
+    puts hfiltered_src_files
   end
 
   register_subcommand(:edit) do
-    Dir.chdir(base_dir)
-    all_files = Dir[File.join('src', format('**/*'))].select(&File.method(:file?))
-    matches = args.inject(all_files){|files,arg|
-      regexp = Regexp.new(arg, ?i)
-      files.select{|f|
-        f[regexp]
-      }
-    }.sort.uniq
-
-    Shell.new(base_dir).transact{|sh|
-      editor = ENV['EDITOR'] || 'vim'
-      puts format('The assumed text editor is: "%s"...', editor)
-      sh.system(ENV.fetch('EDITOR', 'vim'), *matches)
-    }
+    HeroHelper.edit_in_editor(filtered_src_files)
   end
 end
 
