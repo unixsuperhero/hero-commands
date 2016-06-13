@@ -2,7 +2,6 @@
 class HeroSrcSubcommand < Subcommandable
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
   let(:src_dir) { File.join(base_dir, 'src') }
-  let(:editor) { ENV['EDITOR'] || 'vim' }
 
   register_subcommand(:search) do
     Dir.chdir(base_dir)
@@ -26,7 +25,9 @@ class HeroSrcSubcommand < Subcommandable
     }.sort.uniq
 
     Shell.new(base_dir).transact{|sh|
-      sh.system(editor, *matches)
+      editor = ENV['EDITOR'] || 'vim'
+      puts format('The assumed text editor is: "%s"...', editor)
+      sh.system(ENV.fetch('EDITOR', 'vim'), *matches)
     }
   end
 end

@@ -1,16 +1,19 @@
 #!/usr/bin/env ruby
 
 class TodoSubcommand < Subcommandable
-  def self.todo_file
-    File.join Dir.home, 'todo.md'
-  end
+  let(:todo_file) { File.join(Dir.home, 'todo.md') }
+  # def self.todo_file
+  #   File.join Dir.home, 'todo.md'
+  # end
 
   register_subcommand(:list) {
-    exec('less "%s"' % todo_file)
+    cmd = HeroHelper.cmd_from('less', todo_file)
+    exec cmd # exec('less "%s"' % todo_file)
   }
 
   register_subcommand(:edit) {
-    exec('%s "%s"' % [ENV.fetch('EDITOR', 'vim'), todo_file])
+    HeroHelper.edit_in_editor(todo_file)
+    # exec('%s "%s"' % [ENV.fetch('EDITOR', 'vim'), todo_file])
   }
 end
 
