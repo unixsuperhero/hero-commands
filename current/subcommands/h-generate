@@ -1,11 +1,9 @@
 
 class GenerateSubcommand < Subcommandable
-  let(:subcommand_template) {
+  let(:file_template) {
     <<-"TEMPLATE"
 class %<classified>sSubcommand < Subcommandable
-  register_subcommand(:example) do
-    puts 'this is an example'
-  end
+  %<registered_subcommands>s
 end
 
 MainCommand.register_subcommand(:%<underscored>s) {
@@ -16,6 +14,14 @@ MainCommand.register_subcommand(:%<underscored>s) {
     TEMPLATE
   }
 
+  let(:subcmd_template) {
+    <<-"TEMPLATE"
+  register_subcommand(:%<subcmd_name>s) do
+    # ... put code here ...
+  end
+    TEMPLATE
+  }
+
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
   let(:src_dir) { File.join(base_dir, 'src') }
   let(:subcommands_dir) { File.join(src_dir, 'subcommands') }
@@ -23,15 +29,17 @@ MainCommand.register_subcommand(:%<underscored>s) {
   register_subcommand(:subcommand, :subcmd) do
     error_exit('A subcommand name is required as an argument...') if args.empty?
 
-    base_name = args.first
+    base_name = args.shift
+    args.unshift('example') if args.empty?
     vals = {
       classified: HeroHelper.string_to_classname(base_name),
       underscored: HeroHelper.string_to_underscores(base_name),
+      registered_subcommands: args.map{|name| format(subcmd_template, subcmd_name: name) }.join("\n\n")
     }
 
     erb_file = format('h-%s.erb', base_name)
     outfile = File.join(subcommands_dir, erb_file)
-    bytes_written = IO.write(outfile, format(subcommand_template, vals))
+    bytes_written = IO.write(outfile, format(file_template, vals))
 
     ap base_name: base_name,
       erb_file: erb_file,

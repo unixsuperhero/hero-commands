@@ -1,0 +1,28 @@
+class PlansSubcommand < Subcommandable
+  let(:base_dir) { File.join(Dir.home, 'plans') }
+  register_subcommand(:new) do
+    # ... put code here ...
+  end
+
+
+  register_subcommand(:add) do
+    # ... put code here ...
+  end
+
+
+  register_subcommand(:list) do
+    # ... put code here ...
+  end
+
+
+  register_subcommand(:edit) do
+    # ... put code here ...
+  end
+
+end
+
+MainCommand.register_subcommand(:plans) {
+  PlansSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby
