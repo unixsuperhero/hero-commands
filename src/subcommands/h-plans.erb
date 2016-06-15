@@ -4,16 +4,17 @@ class PlansSubcommand < Subcommandable
     # ... put code here ...
   end
 
-
   register_subcommand(:add) do
     # ... put code here ...
   end
 
+  register_subcommand(:pipe) do
+    puts HeroHelper.pipe_cmds('cat ~/projects.yml', 'cat -n')
+  end
 
   register_subcommand(:list) do
     # ... put code here ...
   end
-
 
   register_subcommand(:edit) do
     # ... put code here ...
