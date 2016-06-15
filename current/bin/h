@@ -475,6 +475,36 @@ class HeroHelper
       r.read.tap{|output| r.close }
     end
 
+    class PipeCommand
+      attr_accessor :cmd, :reader, :writer
+      def initialize(cmd)
+        @cmd = cmd
+      end
+
+      def run
+        system(cmd,
+          {}.tap{|opts|
+            opts.merge!(in: reader) if reader
+            opts.merge!(out: writer) if writer
+          }
+        ).tap{
+          reader.close if reader
+          writer.close if writer
+        }
+      end
+    end
+
+    def pipe_cmds(*cmds)
+      pcmds = cmds.flatten.map(&PipeCommand.method(:new))
+      return '' if cmds.empty?
+      pcmds.each_cons(2).to_a.each{|b,a|
+        a.reader, b.writer = IO.pipe
+      }
+      final_reader, pcmds.last.writer = IO.pipe
+      pcmds.each(&:run)
+      final_reader.read{ final_reader.close }
+    end
+
     def mkdirs_for_file(file)
       return false if File.exist?(file)
       mkdirs File.dirname(file)
