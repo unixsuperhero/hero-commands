@@ -10,7 +10,7 @@ class HeroHelper
 
     def string_to_classname(str)
       string = str.to_s
-			string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
+      string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
       string.gsub!(/(?:_|(\/))([a-z\d]*)/i) { "#{$1}#{$2.capitalize}" }
       string.gsub!('/'.freeze, '::'.freeze)
       string

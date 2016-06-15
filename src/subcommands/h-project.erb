@@ -2,12 +2,28 @@
 <%= inject_files 'src/lib/git.rb.erb' %>
 
 class ProjectSubcommand < Subcommandable
+  let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
+  let(:config) { @project_config ||= Config.new(yaml_file, 'projects') }
+
   dynamic_subcommand{
     ByProject.run(args.unshift(subcommand))
   }
 
+  register_subcommand(:data) {
+    ap config.data
+  }
+
+  register_subcommand(:edit) {
+    HeroHelper.edit_in_editor(yaml_file)
+  }
+
+  register_subcommand(:remove) {
+    puts 'not implemented...'
+    ap subcommand: subcommand, args: args
+  }
+
   list_projects = Proc.new{|args|
-    Config.for( File.join(ENV['HOME'], 'projects.yml') )['projects'].map{|p|
+    Config.new( File.join(ENV['HOME'], 'projects.yml') )['projects'].map{|p|
       p['name']
     }.tap(&method(:puts))
   }
@@ -18,7 +34,7 @@ class ProjectSubcommand < Subcommandable
   register_subcommand :print, &list_projects
 
   register_subcommand :dir do
-    projects = Config.for(File.join(ENV['HOME'],'projects.yml'))
+    projects = Config.new(File.join(ENV['HOME'],'projects.yml'))
 
     project = projects['projects'].find{|p|
       p['name'] == args.first
@@ -34,7 +50,7 @@ class ProjectSubcommand < Subcommandable
   end
 
   register_subcommand :add do
-    projects = Config.for(File.join(ENV['HOME'],'projects.yml'))
+    projects = Config.new(File.join(ENV['HOME'],'projects.yml'))
 
     name,path,other = args
     projects['projects'].push({
@@ -62,7 +78,7 @@ class ProjectSubcommand < Subcommandable
     end
 
     def self.project_config
-      @project_config ||= Config.for(project_file)
+      @project_config ||= Config.new(project_file)
     end
 
     def self.project_matcher
@@ -130,8 +146,8 @@ class ProjectSubcommand < Subcommandable
     end
 
     def self.save_feature_info_in_project_yml
-      #config = Config.for('project.local.yml')
-      config = Config.for('project.local.yml')
+      #config = Config.new('project.local.yml')
+      config = Config.new('project.local.yml')
       config.current_issue_id = args.first
       config.current_feature_branch = format('feature/%s', args.join(?-))
       ap config: config,
@@ -148,11 +164,11 @@ class ProjectSubcommand < Subcommandable
     }
 
     def self.project_config
-      @project_config ||= Config.for('project.yml')
+      @project_config ||= Config.new('project.yml')
     end
 
     def self.local_config
-      @local_config ||= Config.for('project.local.yml')
+      @local_config ||= Config.new('project.local.yml')
     end
 
     def self.heroku_app_data(remote:, branch:, issue:)
