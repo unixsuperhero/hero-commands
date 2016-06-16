@@ -164,6 +164,23 @@ class SubcommandMatcher
     self.class.list_for(str)
   end
 
+  def name_map
+    deletes = []
+    subcommand_map.inject({}){|h,(k,v)|
+      h.tap do |new_map|
+        list_for(k).each do |e|
+          if h.has_key?(e)
+            deletes.push(e) if h[e] != v
+          else
+            new_map.merge!(e => k)
+          end
+        end
+      end
+    }.tap{|uniq_map|
+      deletes.each{|k| uniq_map.delete(k) }
+    }.merge(Hash[ subcommand_names.key(subcommand_names) ])
+  end
+
   def uniqs
     deletes = []
     subcommand_map.inject({}){|h,(k,v)|
@@ -178,7 +195,7 @@ class SubcommandMatcher
       end
     }.tap{|uniq_map|
       deletes.each{|k| uniq_map.delete(k) }
-    }
+    }.merge(subcommand_map)
   end
 
   def subcommand_variations
@@ -201,7 +218,12 @@ class SubcommandMatcher
   def shortest_variations
     sorted_uniqs = uniqs.keys.sort_by(&:length)
     subcommand_names.inject({}){|h,name|
-      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)) || name)
+      h.merge(
+        name => sorted_uniqs.find{|uniq_name|
+          next false if subcommand_names.include?(uniq_name) && name != uniq_name
+          name.start_with?(uniq_name)
+        }
+      )
     }
   end
 
@@ -240,6 +262,10 @@ class SubcommandMatcher
     # }.inject(:merge)
   end
   alias_method :print_format, :syntax
+
+  def match_name(partial)
+    name_map[partial]
+  end
 
   def match(cmd)
     uniqs[cmd]
