@@ -17,9 +17,11 @@ class ProjectSubcommand < Subcommandable
     configuration.before_save do |this|
       this.data.map{|k,v|
         relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '\1\2')
+        dug = this.instance_variable_get(:@data)
+        dug = dug.dig(*this.data_path)
         ap(path_before_sub: v,
-           relative_path: relative_path)
-        this.data.merge(k => relative_path)
+           relative_path: relative_path) if v != relative_path
+        dug.merge!(k => relative_path)
       }
     end
     configuration.read!
