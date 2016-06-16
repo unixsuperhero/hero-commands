@@ -103,8 +103,24 @@ class ProjectSubcommand < Subcommandable
     #   match: matcher.match(subcommand)
   }
 
+  register_subcommand(:help, :subcommands, :subcmds) {
+    print_subcommand_list
+  }
+
   register_subcommand(:data) {
     ap data: config.data
+  }
+
+  register_subcommand(:info) {
+    ap {}.tap{|groups|
+      config.data.each{|name,path|
+        if File.exist?(path)
+          groups.merge!(existing: groups.fetch(:existing, {}).merge(name => path))
+        else
+          groups.merge!(orphans: groups.fetch(:orphans, {}).merge(name => path))
+        end
+      }
+    }
   }
 
   register_subcommand(:edit) {
