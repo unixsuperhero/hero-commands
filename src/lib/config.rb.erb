@@ -4,9 +4,51 @@ require 'yaml'
 
 class Config
   attr_accessor :file, :data_path
+  attr_accessor :before_save_hooks, :after_save_hooks
+  attr_accessor :before_read_hooks, :after_read_hooks
 
   def initialize(file, *data_path)
     @file, @data_path = file, data_path
+    @before_read_hooks = []
+    @after_read_hooks = []
+    @before_save_hooks = []
+    @after_save_hooks = []
+  end
+
+  def clear_before_read_hooks!
+    @before_read_hooks = []
+  end
+
+  def clear_after_read_hooks!
+    @after_read_hooks = []
+  end
+
+  def clear_before_save_hooks!
+    @before_save_hooks = []
+  end
+
+  def clear_after_save_hooks!
+    @after_save_hooks = []
+  end
+
+  def before_read(&block)
+    return unless block_given?
+    @before_read_hooks.push(block)
+  end
+
+  def after_read(&block)
+    return unless block_given?
+    @after_read_hooks.push(block)
+  end
+
+  def before_save(&block)
+    return unless block_given?
+    @before_save_hooks.push(block)
+  end
+
+  def after_save(&block)
+    return unless block_given?
+    @after_save_hooks.push(block)
   end
 
   def yaml_file
@@ -22,7 +64,9 @@ class Config
   end
 
   def read!
+    before_read_hooks.map{|hook| hook.call(self) }
     @data = YAML.load(yaml_data) || {}
+    after_read_hooks.map{|hook| hook.call(self) }
     Hash.make_endless(@data)
   end
 
@@ -31,7 +75,9 @@ class Config
   end
 
   def save
+    before_save_hooks.map{|hook| hook.call(self) }
     IO.write yaml_file, YAML.dump(@data)
+    after_save_hooks.map{|hook| hook.call(self) }
     read!
   end
 

@@ -2,9 +2,28 @@
 <%= inject_files 'src/lib/git.rb.erb', 'src/lib/tmux.rb.erb' %>
 
 class ProjectSubcommand < Subcommandable
-  let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
-  let(:config) { @project_config ||= Config.new(yaml_file, 'projects') }
   let(:project_matcher) { SubcommandMatcher.from(config.data) }
+  let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
+  let(:config) { @project_config ||= Config.new(yaml_file, 'projects').tap{|configuration|
+    configuration.after_read do |this|
+      this.data.map{|k,v|
+        expanded_path = File.expand_path(v)
+        dug = this.instance_variable_get(:@data)
+        dug = dug.dig(*this.data_path)
+        dug.merge!(k => expanded_path)
+      }
+    end
+
+    configuration.before_save do |this|
+      this.data.map{|k,v|
+        relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '\1\2')
+        ap(path_before_sub: v,
+           relative_path: relative_path)
+        this.data.merge(k => relative_path)
+      }
+    end
+    configuration.read!
+  }}
 
   no_subcommand{
     matcher = SubcommandMatcher.new(config.data)
@@ -46,6 +65,12 @@ class ProjectSubcommand < Subcommandable
     print_subcommand_list
   }
 
+  register_subcommand(:orphans) {
+    puts config.data.select{|k,v|
+      ! File.exist?(v)
+    }.keys
+  }
+
   register_subcommand(:data) {
     ap data: config.data
   }
@@ -78,6 +103,12 @@ class ProjectSubcommand < Subcommandable
       puts 'done'
     end
     ap remaining_data: config.data
+  }
+
+  register_subcommand(:test) {
+    config
+    binding.pry
+    puts 'done'
   }
 
   list_projects = Proc.new{|args|
