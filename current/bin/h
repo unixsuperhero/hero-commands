@@ -588,6 +588,12 @@ class MainCommand < Subcommandable
     # system(files.unshift(editor).shelljoin)
   }
 
+  register_subcommand(:pry) {
+    puts 'Entering a pry session...'
+    binding.pry
+    puts 'done'
+  }
+
   register_subcommand(:z) { # testing the exit codes for diff
     output = `diff /tmp/diff-test-a /tmp/diff-test-b &>/dev/null`
     ap output: output, sucessful: $?.success?

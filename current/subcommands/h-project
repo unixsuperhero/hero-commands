@@ -66,6 +66,7 @@ end
 class ProjectSubcommand < Subcommandable
   let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
   let(:config) { @project_config ||= Config.new(yaml_file, 'projects') }
+  let(:project_matcher) { SubcommandMatcher.from(config.data) }
 
   no_subcommand{
     matcher = SubcommandMatcher.new(config.data)
@@ -103,7 +104,7 @@ class ProjectSubcommand < Subcommandable
     #   match: matcher.match(subcommand)
   }
 
-  register_subcommand(:help, :subcommands, :subcmds) {
+  register_subcommand(:subcommands, :subcmds) {
     print_subcommand_list
   }
 
@@ -112,7 +113,7 @@ class ProjectSubcommand < Subcommandable
   }
 
   register_subcommand(:info) {
-    ap {}.tap{|groups|
+    ap({}.tap{|groups|
       config.data.each{|name,path|
         if File.exist?(path)
           groups.merge!(existing: groups.fetch(:existing, {}).merge(name => path))
@@ -120,7 +121,7 @@ class ProjectSubcommand < Subcommandable
           groups.merge!(orphans: groups.fetch(:orphans, {}).merge(name => path))
         end
       }
-    }
+    })
   }
 
   register_subcommand(:edit) {
@@ -128,8 +129,17 @@ class ProjectSubcommand < Subcommandable
   }
 
   register_subcommand(:remove) {
-    puts 'not implemented...'
-    ap subcommand: subcommand, args: args
+    error_exit('at least 1 project name must be given') if args.empty?
+    args.each do |arg|
+      name = project_matcher.match_name(arg)
+      path = project_matcher.match(arg)
+      puts
+      printf('Removing project "%s" => "%s"...', name, path)
+      config.data.delete(name)
+      config.save
+      puts 'done'
+    end
+    ap remaining_data: config.data
   }
 
   list_projects = Proc.new{|args|
