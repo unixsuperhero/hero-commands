@@ -53,7 +53,7 @@ class ProjectSubcommand < Subcommandable
   register_subcommand(:info) {
     ap({}.tap{|groups|
       config.data.each{|name,path|
-        if File.exist?(path)
+        if File.exist?(File.expand_path(path))
           groups.merge!(existing: groups.fetch(:existing, {}).merge(name => path))
         else
           groups.merge!(orphans: groups.fetch(:orphans, {}).merge(name => path))
