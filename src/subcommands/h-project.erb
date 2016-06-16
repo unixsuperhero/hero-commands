@@ -16,11 +16,9 @@ class ProjectSubcommand < Subcommandable
 
     configuration.before_save do |this|
       this.data.map{|k,v|
-        relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '\1\2')
+        relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '~\2/').sub(%r{//+}, ?/)
         dug = this.instance_variable_get(:@data)
         dug = dug.dig(*this.data_path)
-        ap(path_before_sub: v,
-           relative_path: relative_path) if v != relative_path
         dug.merge!(k => relative_path)
       }
     end
@@ -108,7 +106,7 @@ class ProjectSubcommand < Subcommandable
   }
 
   register_subcommand(:test) {
-    config
+    config.save
     binding.pry
     puts 'done'
   }
