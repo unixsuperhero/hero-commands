@@ -178,7 +178,7 @@ class SubcommandMatcher
       end
     }.tap{|uniq_map|
       deletes.each{|k| uniq_map.delete(k) }
-    }.merge(Hash[ subcommand_names.key(subcommand_names) ])
+    }.merge(Hash[ subcommand_names.zip(subcommand_names) ])
   end
 
   def uniqs
