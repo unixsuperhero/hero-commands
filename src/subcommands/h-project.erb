@@ -5,12 +5,31 @@ class ProjectSubcommand < Subcommandable
   let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
   let(:config) { @project_config ||= Config.new(yaml_file, 'projects') }
 
+  no_subcommand{
+    ap config_data: config.data
+    matcher = SubcommandMatcher.new(config.data)
+    binding.pry
+    ap projects: matcher.subcommands,
+      subcommand: subcommand,
+      match: matcher.match(subcommand)
+  }
+
   dynamic_subcommand{
-    ByProject.run(args.unshift(subcommand))
+    matcher = SubcommandMatcher.new(config.data)
+    puts 'NOT IMPLEMENTED'
+    exit 1
+    binding.pry
+    ap projects: matcher.subcommands,
+      subcommand: subcommand,
+      match: matcher.match(subcommand)
   }
 
   register_subcommand(:data) {
-    ap config.data
+    orig_data = config.data.dup
+    config.all_data.merge! 'projects' => Hash[config.data.map(&:values)]
+    ap orig_data: orig_data,
+      new_data: config.data
+    config.save
   }
 
   register_subcommand(:edit) {

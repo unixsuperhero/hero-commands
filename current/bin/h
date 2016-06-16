@@ -201,7 +201,7 @@ class SubcommandMatcher
   def shortest_variations
     sorted_uniqs = uniqs.keys.sort_by(&:length)
     subcommand_names.inject({}){|h,name|
-      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)))
+      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)) || name)
     }
   end
 
@@ -381,6 +381,7 @@ end
 
 
 # vim: ft=ruby
+
 class PathEnv
   class << self
     def env
@@ -438,7 +439,7 @@ class HeroHelper
 
     def string_to_classname(str)
       string = str.to_s
-			string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
+      string = string.sub(/^[a-z\d]*/) { |match| match.capitalize }
       string.gsub!(/(?:_|(\/))([a-z\d]*)/i) { "#{$1}#{$2.capitalize}" }
       string.gsub!('/'.freeze, '::'.freeze)
       string

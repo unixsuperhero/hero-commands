@@ -61,7 +61,7 @@ class SubcommandMatcher
   def shortest_variations
     sorted_uniqs = uniqs.keys.sort_by(&:length)
     subcommand_names.inject({}){|h,name|
-      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)))
+      h.merge(name => sorted_uniqs.find(&name.method(:start_with?)) || name)
     }
   end
 
