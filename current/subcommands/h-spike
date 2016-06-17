@@ -1,4 +1,28 @@
 
+class Tmux
+  class << self
+    def sessions
+      `tmux ls`.lines.select{|l| l[/^[^:]+:\s+\d/i] }.map{|l| l[/^([^:]+)(?=:\s+\d+)/i] }
+    end
+
+    def session_exists?(name)
+      sessions.include?(name)
+    end
+
+    def attach_to_session(name)
+      exec("tmux a -t #{name}")
+    end
+
+    def new_session(name, path=Dir.pwd, *args)
+      exec("tmux new -s #{name} -c #{path} " + args.join(' '))
+    end
+  end
+end
+
+
+# vim: ft=ruby
+
+
 class SpikeSubcommand < Subcommandable
   let(:spike_dir) { File.join(Dir.home, 'spikes') }
   let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&File.method(:directory?)).map(&File.method(:basename)).sort }
@@ -8,20 +32,24 @@ class SpikeSubcommand < Subcommandable
   let(:next_name) { format(fmt, next_num) }
   let(:next_dir) { File.join(spike_dir, next_name) }
 
-  let(:tmux_session_exists?) { |name|
-    `tmux ls`.lines.any?{|l| l[/^#{name}:/] }
-  }
-
-  let(:attach_to_tmux_session) { |name|
-    exec("tmux a -t #{name}")
-  }
-
-  let(:start_new_tmux_session) { |name, path|
-    exec("tmux new -s #{name} -c #{path}")
-  }
-
   register_subcommand(:list) {
     puts spikes
+  }
+
+  register_subcommand(:next_name) {
+    puts format('Next Spike Name: "%s"', next_name)
+  }
+
+  register_subcommand(:next_num) {
+    puts format('Next Spike Num: "%s"', next_num)
+  }
+
+  register_subcommand(:next_dir) {
+    puts format('Next Spike Dir: "%s"', next_dir)
+  }
+
+  register_subcommand(:last_spike) {
+    puts format('Last Spike: "spike%05d"', last_spike)
   }
 
   register_subcommand(:new, :start) {
@@ -31,11 +59,12 @@ class SpikeSubcommand < Subcommandable
 
     spike_session_name = 'spike%s' % next_spike_name
 
-    `mkdir -pv "#{next_spike_dir}"`
+    # `mkdir -pv "#{next_spike_dir}"`
+    HeroHelper.mkdirs(next_spike_dir)
 
-    tmux_session_exists?(spike_session_name) ?
-      attach_to_tmux_session(spike_session_name) :
-      start_new_tmux_session(spike_session_name, next_spike_dir)
+    Tmux.session_exists?(spike_session_name) ?
+      Tmux.attach_to_session(spike_session_name) :
+      Tmux.new_session(spike_session_name, next_spike_dir)
   }
 end
 
