@@ -1,7 +1,11 @@
 class Tmux
   class << self
+    def sessions
+      `tmux ls`.lines.select{|l| l[/^[^:]+:\s+\d/i] }.map{|l| l[/^([^:]+)(?=:\s+\d+)/i] }
+    end
+
     def session_exists?(name)
-      `tmux ls`.lines.any?{|l| l[/^#{name}:/] }
+      sessions.include?(name)
     end
 
     def attach_to_session(name)
