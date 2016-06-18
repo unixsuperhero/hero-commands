@@ -45,6 +45,8 @@ class CommandTemplate
 
     def build_in_order
       move_to_repo_base
+      system('git', 'add', 'current')
+      system('git', 'commit', '-m', 'committing current/ before rebuilding it')
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
       } #.map(&:print_children)
@@ -110,6 +112,21 @@ class CommandTemplate
     ERB.new(IO.read(filename)).result(binding)
   end
 
+  def homefile
+    file.sub(%r{src/}, File.join(Dir.home, '')).sub(%r{[.]erb}, '').tap{|ofile|
+      # puts format('ofile: "%s"', ofile)
+      # puts format('dirname: "%s"', File.dirname(ofile))
+      `mkdir -pv "#{File.dirname(ofile)}"`
+
+      HeroHelper.run_inside_dir(Dir.home){
+        if File.exist?(ofile)
+          system('git', 'add', ofile)
+          system('git', 'commit', '-m', format('autocommitting %s before rebuilding it', ofile))
+        end
+      }
+    }
+  end
+
   def outfile
     file.sub(%r{src/}, 'current/').sub(%r{[.]erb}, '').tap{|ofile|
       # puts format('ofile: "%s"', ofile)
@@ -143,11 +160,11 @@ class CommandTemplate
       system(diff_cmd)
       break if $?.success?
 
-      if File.exist?(homefile)
-        renamed_homefile = homefile_backup(homefile)
-        puts format('Backing up "%s" to "%s"...', homefile, renamed_homefile)
-        File.rename(homefile, renamed_homefile)
-      end
+      # if File.exist?(homefile)
+      #   renamed_homefile = homefile_backup(homefile)
+      #   puts format('Backing up "%s" to "%s"...', homefile, renamed_homefile)
+      #   File.rename(homefile, renamed_homefile)
+      # end
 
       if File.link(outfile, homefile) == 0
         puts format('Hard linked "%s" to "%s"...', outfile, homefile)
