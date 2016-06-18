@@ -1,7 +1,12 @@
 #!/usr/bin/env ruby
 
+<%= inject_files 'src/lib/project_helper.rb.erb' %>
+
 class TodoSubcommand < Subcommandable
   let(:todo_file) { File.join(Dir.home, 'todo.md') }
+  let(:arg_matching_project) {
+    project_name = ProjectHelper.project_matcher.match_name(args.first)
+  }
   # def self.todo_file
   #   File.join Dir.home, 'todo.md'
   # end

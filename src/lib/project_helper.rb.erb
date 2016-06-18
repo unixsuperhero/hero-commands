@@ -1,5 +1,7 @@
 
-class Project
+<%= inject_files 'src/lib/subcommandable.rb.erb', 'src/lib/config.rb.erb', 'src/lib/tmux.rb.erb' %>
+
+class ProjectHelper
   class << self
     def config
       Config.new(yaml_file, 'projects').tap{|configuration|
@@ -32,8 +34,16 @@ class Project
       File.join(Dir.home, 'projects.yml')
     end
 
+    def is_project?(partial)
+      full_name = project_matcher.match_name(partial)
+    end
+
     def projects
       config.data.keys
+    end
+
+    def dir_for(project_partial)
+      project_matcher.match(project_partial)
     end
 
     def dirs

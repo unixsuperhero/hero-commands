@@ -1,5 +1,5 @@
 
-<%= inject_files 'src/lib/git.rb.erb', 'src/lib/tmux.rb.erb', 'src/lib/project.rb.erb' %>
+<%= inject_files 'src/lib/project_helper.rb.erb' %>
 
 class ProjectSubcommand < Subcommandable
   let(:project_matcher) { SubcommandMatcher.from(config.data) }
@@ -38,27 +38,7 @@ class ProjectSubcommand < Subcommandable
   }
 
   dynamic_subcommand{
-    matcher = SubcommandMatcher.new(config.data)
-    name = matcher.match_name(subcommand)
-    path = matcher.match(subcommand)
-
-    error_exit('No project found matching "%s"...' % subcommand) unless name
-
-    puts
-    puts format('Project Name: %s', name)
-    puts format('Project Path: %s', path)
-    puts
-
-    if Tmux.session_exists?(name)
-      Tmux.attach_to_session(name)
-    else
-      Tmux.new_session(name, path)
-    end
-    # ap shortest_variations: matcher.shortest_variations
-    # binding.pry
-    # ap projects: matcher.subcommands,
-    #   subcommand: subcommand,
-    #   match: matcher.match(subcommand)
+    ProjectHelper.tmux_session_for_project(subcommand)
   }
 
   register_subcommand(:subcommands, :subcmds) {
