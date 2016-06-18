@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd ~/projects/hero-commands/
+tmux neww "ls -1 src/**/*.erb | entr -d ./build"
+
