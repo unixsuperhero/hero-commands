@@ -1,5 +1,5 @@
 
-<%= inject_files 'src/lib/git.rb.erb', 'src/lib/tmux.rb.erb' %>
+<%= inject_files 'src/lib/git.rb.erb', 'src/lib/tmux.rb.erb', 'src/lib/project.rb.erb' %>
 
 class ProjectSubcommand < Subcommandable
   let(:project_matcher) { SubcommandMatcher.from(config.data) }
