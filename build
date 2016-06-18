@@ -50,6 +50,10 @@ class CommandTemplate
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
       } #.map(&:print_children)
+      system('git', 'add', 'src')
+      system('git', 'commit', '-m', 'committing src/ after rebuilding it')
+      system('git', 'add', 'current')
+      system('git', 'commit', '-m', 'committing current/ after rebuilding it')
       # puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
     end
 
