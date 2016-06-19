@@ -142,6 +142,7 @@ end
 module ShellCommandable
   def self.included(base)
     base.extend(ClassMethods)
+    base.const_set(:BINDING, base.binding)
   end
 
   module ClassMethods
@@ -169,6 +170,7 @@ module ShellCommandable
     end
 
     def run_with_hooks(&block)
+      ap(binding: BINDING)
       @before_hook.call if @before_hook
       block.call
       @after_hook.call if @after_hook
