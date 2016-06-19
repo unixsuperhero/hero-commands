@@ -143,15 +143,18 @@ module ShellCommandable
   def self.included(base)
     ap(included_base: base, base_class: base.class)
     base.extend(ClassMethods)
-    base.const_set(:BINDING, base.instance_eval{ binding })
+
+    def base.clet(name,&blk)
+      base.define_method(name, &blk)
+    end
   end
 
   module ClassMethods
     attr_accessor :subcommand
 
-    def clet(name, &block)
-      define_method(name, &block)
-    end
+    # def clet(name, &block)
+    #   define_method(name, &block)
+    # end
 
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
