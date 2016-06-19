@@ -48,6 +48,10 @@ class AnimeSubcommand < Subcommandable
     exit 0
   }
 
+  register_subcommand(:project_context){
+    ap(project_context: MainCommand.project_context)
+  }
+
   register_subcommand(:dir, :directory, :path){
     if args.empty?
       printf downloads_dir
