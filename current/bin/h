@@ -636,11 +636,15 @@ class NameMatcher
 
   def match_with_data(partial)
     return unless uniqs.has_key?(partial)
-    {
-      name: match_name(partial),
-      dir: uniqs[partial],
-      # syntax
-      # array of uniq matches
+    {}.tap{|data|
+      full_name = match_name(partial)
+      data.merge!(
+        name: full_name,
+        dir: uniqs[partial],
+        syntax: syntax[full_name],
+        # syntax
+        # array of uniq matches
+      )
     }
   end
 end
