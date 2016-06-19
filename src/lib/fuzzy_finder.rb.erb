@@ -1,0 +1,72 @@
+class FuzzyFinder
+  class << self
+    def find(string, pattern)
+      new(string, pattern)
+    end
+
+    def matches(string, pattern)
+      new(string, pattern).matches
+    end
+
+    def match(string, pattern)
+      new(string, pattern).matches.first
+    end
+    alias_method :shortest_match, :match
+  end
+
+  attr_accessor :string, :pattern
+  def initialize(string, pattern)
+    @string = string
+    @pattern = pattern
+    @pattern_cursor = 0
+    @positions_by_pattern = []
+    while not done?
+      positions
+      next_pos
+    end
+  end
+
+  def positions
+    pchar = pattern[@pattern_cursor]
+    @positions_by_pattern[
+      @pattern_cursor
+    ] = @string.chars.map.with_index{|schar,i|
+      next unless schar == pchar
+      i
+    }.compact
+  end
+
+  def next_pos
+    if @pattern_cursor < @pattern.length - 1
+      @pattern_cursor += 1
+    else
+      @done = true
+    end
+  end
+
+  def done?
+    @done == true
+  end
+
+  def matches
+    @matches = []
+    @positions_by_pattern.map.with_index{|positions,idx|
+      if idx == 0
+        @matches = positions.map{|pos| [pos] }
+      else
+        @new_matches = []
+        @matches.each.with_index{|mtch,midx|
+          positions.select{|pos|
+            pos > mtch.last
+          }.each{|pos|
+            @new_matches << (mtch + [pos])
+          }
+        }
+        @matches = @new_matches unless @new_matches.empty?
+      end
+    }
+    @matches.map{|positions|
+      @string[positions.first, positions.last - (positions.first - 1)]
+    }.sort_by(&:length).uniq
+  end
+end
