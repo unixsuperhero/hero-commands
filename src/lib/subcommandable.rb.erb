@@ -142,7 +142,7 @@ end
 module ShellCommandable
   def self.included(base)
     base.extend(ClassMethods)
-    base.const_set(:BINDING, base.binding)
+    base.const_set(:BINDING, base.instance_eval{ binding })
   end
 
   module ClassMethods
