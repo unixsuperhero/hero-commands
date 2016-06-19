@@ -170,7 +170,7 @@ module ShellCommandable
     end
 
     def run_with_hooks(&block)
-      ap(binding: BINDING)
+      ap(binding: BINDING, reciever: BINDING.reciever, methods: BINDING.receiver.methods - Class.methods)
       @before_hook.call if @before_hook
       block.call
       @after_hook.call if @after_hook
