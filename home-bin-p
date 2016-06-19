@@ -1,7 +1,0 @@
-#!/usr/bin/env ruby
-
-class ProjectSubcommand < Subcommandable
-end
-
-ProjectSubcommand.run
-
