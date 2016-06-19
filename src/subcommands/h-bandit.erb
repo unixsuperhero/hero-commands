@@ -1,4 +1,5 @@
-class BanditSubcommand < Subcommandable
+class BanditSubcommand
+  include ShellCommandable
   let(:new_bandit_dir) {
     File.join(Dir.home, 'projects', 'bandit')
   }
