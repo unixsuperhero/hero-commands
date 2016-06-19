@@ -13,6 +13,7 @@ class MainCommand
   include ShellCommandable
 
   def self.run(args=ARGV.clone)
+    ap(args: args, argv: ARGV.clone)
     if args.first[0] == ?@
       project_data = ProjectHelper.project_for(args.first)
       project_context.merge!(project_data) if project_data
