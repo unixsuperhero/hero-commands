@@ -340,7 +340,7 @@ module ShellCommandable
   module ClassMethods
     attr_accessor :subcommand
 
-    def clet(name, &block)
+    def let(name, &block)
       define_singleton_method(name, &block)
     end
 
