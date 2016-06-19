@@ -328,13 +328,15 @@ end
 
 module ShellCommandable
   def self.included(base)
-    ap(included_base: base, included_class: base.class)
-    base.extend LetHelper
     base.extend(ClassMethods)
   end
 
   module ClassMethods
     attr_accessor :subcommand
+
+    def letm(name, &block)
+      define_method(name, &block)
+    end
 
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
