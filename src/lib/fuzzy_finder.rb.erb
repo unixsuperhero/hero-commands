@@ -1,72 +1,86 @@
 class FuzzyFinder
   class << self
-    def find(string, pattern)
-      new(string, pattern)
+    def best(text,pat)
+      find(text,pat).first
     end
 
-    def matches(string, pattern)
-      new(string, pattern).matches
+    def match(text,pat)
+      find(text,pat).first
     end
 
-    def match(string, pattern)
-      new(string, pattern).matches.first
+    def find(text,pat)
+      find(text,pat)
     end
-    alias_method :shortest_match, :match
-  end
 
-  attr_accessor :string, :pattern
-  def initialize(string, pattern)
-    @string = string
-    @pattern = pattern
-    @pattern_cursor = 0
-    @positions_by_pattern = []
-    while not done?
-      positions
-      next_pos
+    def all(text,pat)
+      find(text,pat)
     end
-  end
 
-  def positions
-    pchar = pattern[@pattern_cursor]
-    @positions_by_pattern[
-      @pattern_cursor
-    ] = @string.chars.map.with_index{|schar,i|
-      next unless schar == pchar
-      i
-    }.compact
-  end
-
-  def next_pos
-    if @pattern_cursor < @pattern.length - 1
-      @pattern_cursor += 1
-    else
-      @done = true
+    def from_left(text, char, last_index=nil, limit=nil)
+      [].tap{|indexes|
+        ap char: char, last_index: last_index, limit: limit
+        while cur_idx = text.index(char, last_index || 0)
+          break if limit && cur_idx >= limit
+          indexes.push cur_idx
+          last_index = cur_idx + 1
+        end
+      }
     end
-  end
 
-  def done?
-    @done == true
-  end
+    def from_right(text, char, last_index=nil, limit=nil)
+      [].tap{|indexes|
+        ap char: char, last_index: last_index, limit: limit
+        while cur_idx = text.rindex(char, last_index || -1)
+          break if limit && cur_idx <= limit
+          indexes.push cur_idx
+          last_index = cur_idx - 1
+        end
+      }
+    end
 
-  def matches
-    @matches = []
-    @positions_by_pattern.map.with_index{|positions,idx|
-      if idx == 0
-        @matches = positions.map{|pos| [pos] }
-      else
-        @new_matches = []
-        @matches.each.with_index{|mtch,midx|
-          positions.select{|pos|
-            pos > mtch.last
-          }.each{|pos|
-            @new_matches << (mtch + [pos])
+    def find_all(text,pat)
+      indexes = {left: [], right: []}
+
+      pat.length.times.inject([]){|list,idx|
+        newfind = (idx.even? ? (list.last || 0) + idx : (list.last || 0) - idx)
+        list.push(newfind)
+      }.each_with_index{|pat_pos,pidx|
+        if pidx == 0
+          indexes[:left] = from_left(text, pat[pat_pos]).map{|leftlist|
+            [leftlist]
           }
-        }
-        @matches = @new_matches unless @new_matches.empty?
-      end
-    }
-    @matches.map{|positions|
-      @string[positions.first, positions.last - (positions.first - 1)]
-    }.sort_by(&:length).uniq
+        elsif pidx == 1
+          indexes[:right] = from_right(text, pat[pat_pos]).map{|rightlist|
+            [rightlist]
+          }
+        elsif pidx.even?
+          limit = indexes[:right].map(&:first).max
+          indexes[:left] = indexes[:left].flat_map{|lside|
+            results = from_left(text, pat[pat_pos], lside.last + 1, limit)
+            next [] if results.empty?
+            results.map{|leftlist|
+              lside.dup.push(leftlist)
+            }
+          }
+        else
+          limit = indexes[:left].map(&:last).min
+          indexes[:right] = indexes[:right].flat_map{|rside|
+            results = from_right(text, pat[pat_pos], rside.first - 1, limit)
+            next [] if results.empty?
+            results.map{|rightlist|
+              rside.dup.unshift(rightlist)
+            }
+          }
+        end
+      }
+
+      indexes[:left].flat_map{|lside|
+        indexes[:right].select{|rside| lside.last < rside.first }.map{|rside| lside.dup.concat(rside) }
+      }.map{|idxs|
+        text[idxs.first..idxs.last]
+      }.sort_by(&:length).uniq.tap{|finals|
+        ap(finals: finals)
+      }
+    end
   end
 end
