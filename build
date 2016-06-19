@@ -170,6 +170,7 @@ class CommandTemplate
       #   File.rename(homefile, renamed_homefile)
       # end
 
+      File.unlink(homefile)
       if File.link(outfile, homefile) == 0
         puts format('Hard linked "%s" to "%s"...', outfile, homefile)
       end
