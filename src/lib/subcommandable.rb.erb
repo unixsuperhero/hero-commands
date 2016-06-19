@@ -285,11 +285,11 @@ class Subcommandable
       exit 1
     end
 
-    # def let(attr_name, &block)
-    #   return unless block_given?
-    #   attr_name = attr_name.to_sym unless attr_name.is_a?(Symbol)
-    #   define_singleton_method(attr_name, block)
-    # end
+    def let(attr_name, &block)
+      return unless block_given?
+      attr_name = attr_name.to_sym unless attr_name.is_a?(Symbol)
+      define_singleton_method(attr_name, block)
+    end
 
     def print_subcommand_list
       puts <<-MESSAGE.lines.map{|l| l.chomp.sub(/^\s{8}/, '') }
