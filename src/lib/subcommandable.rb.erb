@@ -141,6 +141,7 @@ end
 
 module ShellCommandable
   def self.included(base)
+    ap(included_base: base, included_class: base.class)
     base.extend(ClassMethods)
   end
 
@@ -273,6 +274,7 @@ class Subcommandable
     attr_accessor :subcommand
 
     def inherited(base)
+      ap(inherited_base: base, inherited_class: base.class)
       base.extend LetHelper
     end
 
