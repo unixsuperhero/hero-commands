@@ -9,9 +9,10 @@ require 'shell'
   'src/lib/subcommandable.rb.erb', 'src/lib/path_env.rb.erb', 'src/lib/project_helper.rb.erb',
   'src/lib/hero_helper.rb.erb' %>
 
-class MainCommand < Subcommandable
+class MainCommand
+  include ShellCommandable
 
-  def self.run(args=argv)
+  def self.run(args=ARGV.clone)
     if args.first[0] == ?@
       project_data = ProjectHelper.project_for(args.first)
       project_context.merge!(project_data) if project_data
@@ -72,7 +73,7 @@ class MainCommand < Subcommandable
 end
 
 MainCommand.load_subcommands_by_prefix('h')
-MainCommand.run(ARGV.clone)
+MainCommand.run
 
 
 
