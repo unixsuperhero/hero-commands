@@ -141,21 +141,21 @@ end
 
 module ShellCommandable
   def self.included(base)
-    ap(included_base: base, base_class: base.class)
+    # ap(included_base: base, base_class: base.class)
     base.extend(ClassMethods)
 
-    def base.clet(name,&blk)
-      ap(self: self, klass: self.class, methods: self.methods - Class.methods, imethods: self.instance_methods - Object.methods)
-      self.instance_eval{ define_singleton_method(name, &blk) }
-    end
+    # def base.clet(name,&blk)
+    #   ap(self: self, klass: self.class, methods: self.methods - Class.methods, imethods: self.instance_methods - Object.methods)
+    #   self.instance_eval{ define_singleton_method(name, &blk) }
+    # end
   end
 
   module ClassMethods
     attr_accessor :subcommand
 
-    # def clet(name, &block)
-    #   define_method(name, &block)
-    # end
+    def clet(name, &block)
+      define_singleton_method(name, &block)
+    end
 
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
@@ -279,7 +279,7 @@ class Subcommandable
     attr_accessor :subcommand
 
     def inherited(base)
-      ap(inherited_base: base, inherited_class: base.class)
+      # ap(inherited_base: base, inherited_class: base.class)
       base.extend LetHelper
     end
 
