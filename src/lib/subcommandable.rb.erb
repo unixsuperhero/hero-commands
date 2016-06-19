@@ -147,7 +147,7 @@ module ShellCommandable
   module ClassMethods
     attr_accessor :subcommand
 
-    def let(name, &block)
+    def self.let(name, &block)
       define_method(name, &block)
     end
 
