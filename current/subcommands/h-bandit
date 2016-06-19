@@ -14,6 +14,7 @@ class BanditSubcommand
 
   before{
     puts format('pwd before cd: %s', Dir.pwd)
+    ap(self: self, self_class: self.class)
     cd_to_dir
     puts format('pwd after cd: %s', Dir.pwd)
   }
