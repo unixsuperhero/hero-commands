@@ -333,7 +333,7 @@ module ShellCommandable
 
     def base.clet(name,&blk)
       ap(self: self, klass: self.class, methods: self.methods - Class.methods, imethods: self.instance_methods - Object.methods)
-      self.instance_eval{ define_method(name, &blk) }
+      self.instance_eval{ define_singleton_method(name, &blk) }
     end
   end
 
