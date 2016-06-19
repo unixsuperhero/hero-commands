@@ -1,16 +1,16 @@
 class BanditSubcommand
   include ShellCommandable
-  let(:new_bandit_dir) {
+  clet(:new_bandit_dir) {
     File.join(Dir.home, 'projects', 'bandit')
   }
 
-  let(:bandit_dir) { File.join(Dir.home, 'projects', 'bandit') }
-  let(:yaml_file) { File.join(bandit_dir, 'passwords.yml') }
-  let(:cd_to_dir) { Dir.chdir(bandit_dir) }
-  let(:config) { @config_file ||= Config.new(yaml_file, 'passwords') }
-  let(:next_game) { config.data.keys.map(&:to_i).max }
-  let(:password_for) {|game| config.data[game.to_i] }
-  let(:run_game) {|game| system(HeroHelper.cmd_from('./bandit.exp', game.to_s, password_for(game))) }
+  clet(:bandit_dir) { File.join(Dir.home, 'projects', 'bandit') }
+  clet(:yaml_file) { File.join(bandit_dir, 'passwords.yml') }
+  clet(:cd_to_dir) { Dir.chdir(bandit_dir) }
+  clet(:config) { @config_file ||= Config.new(yaml_file, 'passwords') }
+  clet(:next_game) { config.data.keys.map(&:to_i).max }
+  clet(:password_for) {|game| config.data[game.to_i] }
+  clet(:run_game) {|game| system(HeroHelper.cmd_from('./bandit.exp', game.to_s, password_for(game))) }
 
   before{
     puts format('pwd before cd: %s', Dir.pwd)
