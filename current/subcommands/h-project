@@ -6,24 +6,25 @@ class ProjectSubcommand
 
   let(:project_matcher) { SubcommandMatcher.from(config.data) }
   let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
+  let(:config_after_read) {Proc.new{|this|
+    this.data.map{|k,v|
+      expanded_path = File.expand_path(v)
+      dug = this.instance_variable_get(:@data)
+      dug = dug.dig(*this.data_path)
+      dug.merge!(k => expanded_path)
+    }
+  }}
+  let(:config_before_save) {Proc.new{|this|
+    this.data.map{|k,v|
+      relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '~\2/').sub(%r{//+}, ?/)
+      dug = this.instance_variable_get(:@data)
+      dug = dug.dig(*this.data_path)
+      dug.merge!(k => relative_path)
+    }
+  }}
   let(:config) { @project_config ||= Config.new(yaml_file, 'projects').tap{|configuration|
-    configuration.after_read do |this|
-      this.data.map{|k,v|
-        expanded_path = File.expand_path(v)
-        dug = this.instance_variable_get(:@data)
-        dug = dug.dig(*this.data_path)
-        dug.merge!(k => expanded_path)
-      }
-    end
-
-    configuration.before_save do |this|
-      this.data.map{|k,v|
-        relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '~\2/').sub(%r{//+}, ?/)
-        dug = this.instance_variable_get(:@data)
-        dug = dug.dig(*this.data_path)
-        dug.merge!(k => relative_path)
-      }
-    end
+    configuration.after_read(&config_after_read)
+    configuration.before_save(&config_before_save)
     configuration.read!
   }}
 
