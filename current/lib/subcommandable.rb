@@ -147,7 +147,7 @@ module ShellCommandable
   module ClassMethods
     attr_accessor :subcommand
 
-    def clet(name, &block)
+    def self.clet(name, &block)
       define_method(name, &block)
     end
 
