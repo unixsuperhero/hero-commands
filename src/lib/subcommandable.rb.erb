@@ -144,12 +144,12 @@ module ShellCommandable
     base.extend(ClassMethods)
   end
 
+  def self.let(name, &block)
+    define_method(name, &block)
+  end
+
   module ClassMethods
     attr_accessor :subcommand
-
-    def self.let(name, &block)
-      define_method(name, &block)
-    end
 
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
