@@ -43,17 +43,18 @@ class CommandTemplate
       }
     end
 
-    def build_in_order
+    def build_in_order(args=ARGV.dup)
+      commit_msg = args.empty? ? 'auto-commit after build' : args.join(' ')
       move_to_repo_base
       system('git', 'add', 'current')
       system('git', 'commit', '-m', 'committing current/ before rebuilding it')
       build_order.select{|k,v| v.nil? }.keys.map{|newfile|
         render_and_add_injected_files(newfile)
       } #.map(&:print_children)
-      system('git', 'add', 'src')
-      system('git', 'commit', '-m', 'committing src/ after rebuilding it')
-      system('git', 'add', 'current')
-      system('git', 'commit', '-m', 'committing current/ after rebuilding it')
+      system('git', 'add', '--all', 'src')
+      system('git', 'commit', '-m', format('src/: %s', commit_msg))
+      system('git', 'add', '--all', 'current')
+      system('git', 'commit', '-m', format('current/: %s', commit_msg))
       # puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
     end
 
