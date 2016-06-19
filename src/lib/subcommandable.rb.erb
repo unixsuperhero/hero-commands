@@ -145,7 +145,7 @@ module ShellCommandable
     base.extend(ClassMethods)
 
     def base.clet(name,&blk)
-      self.define_method(name, &blk)
+      self.instance_eval{ define_method(name, &blk) }
     end
   end
 
