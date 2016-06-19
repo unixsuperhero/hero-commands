@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
-class CurlSubcommand < Subcommandable
+class CurlSubcommand
+  include ShellCommandable
+
   class << self
     def run(args)
       new(args).tap(&:run)

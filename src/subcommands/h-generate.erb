@@ -1,8 +1,11 @@
 
-class GenerateSubcommand < Subcommandable
+class GenerateSubcommand
+  include ShellCommandable
+
   let(:file_template) {
     <<-"TEMPLATE"
-class %<classified>sSubcommand < Subcommandable
+class %<classified>sSubcommand
+  include ShellCommandable
   %<registered_subcommands>s
 end
 

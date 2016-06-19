@@ -1,5 +1,7 @@
 
-class HeroSrcSubcommand < Subcommandable
+class HeroSrcSubcommand
+  include ShellCommandable
+
   before{ Dir.chdir(base_dir) }
 
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
@@ -40,7 +42,9 @@ class HeroSrcSubcommand < Subcommandable
   end
 end
 
-class HeroSubcommand < Subcommandable
+class HeroSubcommand
+  include ShellCommandable
+
   let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
   let(:src_dir) { File.join(base_dir, 'src') }
 

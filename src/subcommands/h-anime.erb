@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
-class AnimeSubcommand < Subcommandable
+class AnimeSubcommand
+  include ShellCommandable
+
   class << self
     def downloads_dir
       File.join(Dir.home, 'Downloads', 'finished')

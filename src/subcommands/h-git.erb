@@ -154,7 +154,9 @@ class Git
   end
 end
 
-class GitSubcommand < Subcommandable
+class GitSubcommand
+  include ShellCommandable
+
   register_subcommand(:current_branch){
     puts format("current branch: %s", Git.current_branch)
   }

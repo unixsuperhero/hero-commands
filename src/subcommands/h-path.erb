@@ -1,4 +1,6 @@
-class PathSubcommand < Subcommandable
+class PathSubcommand
+  include ShellCommandable
+
   class << self
     def path_list
       ENV['PATH'].split(/:+/)

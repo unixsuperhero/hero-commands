@@ -2,7 +2,9 @@
 
 require 'mechanize'
 
-class RipSubcommand < Subcommandable
+class RipSubcommand
+  include ShellCommandable
+
   class << self
     def ripper_plugin(url)
       @plugin ||= RipperPlugin.plugin_for(url)
