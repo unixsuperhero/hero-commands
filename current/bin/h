@@ -331,7 +331,7 @@ module ShellCommandable
     base.extend(ClassMethods)
   end
 
-  def self.let(name, &block)
+  def let(name, &block)
     define_method(name, &block)
   end
 
