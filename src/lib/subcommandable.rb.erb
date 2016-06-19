@@ -142,11 +142,8 @@ end
 module ShellCommandable
   def self.included(base)
     ap(included_base: base, included_class: base.class)
+    base.extend LetHelper
     base.extend(ClassMethods)
-  end
-
-  def let(name, &block)
-    define_method(name, &block)
   end
 
   module ClassMethods
