@@ -544,6 +544,23 @@ class NameMatcher
     }.merge(Hash[ subcommand_names.zip(subcommand_names) ])
   end
 
+  def uniqs_by_name
+    deletes = []
+    subcommand_map.inject({}){|h,(k,v)|
+      h.tap do |new_map|
+        list_for(k).each do |e|
+          if h.has_key?(e)
+            deletes.push(e) if subcommand_map[h[e]] != subcommand_map[k]
+          else
+            new_map.merge!(e => k)
+          end
+        end
+      end
+    }.tap{|uniq_map|
+      deletes.each{|k| uniq_map.delete(k) }
+    }.merge(Hash[subcommand_names.zip(subcommand_names)])
+  end
+
   def uniqs
     deletes = []
     subcommand_map.inject({}){|h,(k,v)|
@@ -640,7 +657,7 @@ class NameMatcher
       full_name = match_name(partial)
       data.merge!(
         name: full_name,
-        dir: uniqs[partial],
+        data: uniqs[partial],
         syntax: syntax[full_name],
         # syntax
         # array of uniq matches
