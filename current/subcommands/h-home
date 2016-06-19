@@ -1,4 +1,5 @@
-# class HomeSubcommand < Subcommandable
+# class HomeSubcommand
+#   include ShellCommandable
 # end
 
 # MainCommand.register_subcommand(:home) {

@@ -1,5 +1,7 @@
 
-class TmuxSubcommand < Subcommandable
+class TmuxSubcommand
+  include ShellCommandable
+
   register_subcommand(:ls, :list) {
     puts `tmux ls`
   }

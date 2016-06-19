@@ -1,5 +1,7 @@
 
-class TestSubcommand < Subcommandable
+class TestSubcommand
+  include ShellCommandable
+
   register_subcommand(:underscorify) do
     puts args.map(&HeroHelper.method(:string_to_underscores))
   end

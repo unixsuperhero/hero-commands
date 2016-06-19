@@ -1,4 +1,6 @@
-class PlansSubcommand < Subcommandable
+class PlansSubcommand
+  include ShellCommandable
+
   let(:base_dir) { File.join(Dir.home, 'plans') }
   register_subcommand(:new) do
     # ... put code here ...

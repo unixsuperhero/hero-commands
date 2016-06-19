@@ -1,7 +1,9 @@
 
 
 
-class ProjectSubcommand < Subcommandable
+class ProjectSubcommand
+  include ShellCommandable
+
   let(:project_matcher) { SubcommandMatcher.from(config.data) }
   let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
   let(:config) { @project_config ||= Config.new(yaml_file, 'projects').tap{|configuration|
@@ -141,7 +143,9 @@ class ProjectSubcommand < Subcommandable
     Features.run(args)
   end
 
-  class ByProject < Subcommandable
+  class ByProject
+    include ShellCommandable
+
     def self.project_file
       File.join(ENV['HOME'], 'projects.yml')
     end
@@ -182,7 +186,9 @@ class ProjectSubcommand < Subcommandable
     }
   end
 
-  class Features < Subcommandable
+  class Features
+    include ShellCommandable
+
     register_subcommand(:start) {
       if args.first.to_i == 0
         <<-"MESSAGE"
@@ -301,7 +307,9 @@ class ProjectSubcommand < Subcommandable
     }
   end
 
-  class Branches < Subcommandable
+  class Branches
+    include ShellCommandable
+
     register_subcommand(:link) {
       puts format('called branch:link with %s and %s', subcommand, args[0])
     }
@@ -318,7 +326,9 @@ class ProjectSubcommand < Subcommandable
     }
   end
 
-  class Issues < Subcommandable
+  class Issues
+  include ShellCommandable
+
     register_subcommand(:list) {
       system('ghi', 'list')
     }

@@ -1,7 +1,9 @@
 
 
 
-class SpikeSubcommand < Subcommandable
+class SpikeSubcommand
+  include ShellCommandable
+
   let(:spike_dir) { File.join(Dir.home, 'spikes') }
   let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&File.method(:directory?)).map(&File.method(:basename)).sort }
   let(:last_spike) { spikes.map(&:to_i).max }
