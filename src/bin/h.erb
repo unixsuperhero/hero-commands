@@ -6,7 +6,8 @@ require 'yaml'
 require 'shell'
 
 <%= inject_files 'src/lib/hash_ext.rb.erb', 'src/lib/config.rb.erb',
-  'src/lib/subcommandable.rb.erb', 'src/lib/path_env.rb.erb', 'src/lib/project_helper.rb.erb',
+  'src/lib/subcommandable.rb.erb', 'src/lib/path_env.rb.erb',
+  'src/lib/project_helper.rb.erb', 'src/lib/list_filter.rb.erb',
   'src/lib/hero_helper.rb.erb' %>
 
 class MainCommand
@@ -14,15 +15,28 @@ class MainCommand
 
   def self.run(args=argv)
     if args.first && args.first[0] == ?@
-      project_data = ProjectHelper.project_for(args.first)
-      project_context.merge!(project_data) if project_data
+      @project_context = ProjectHelper.project_for(args.first)
       args.shift
     end
-    super
+
+    if project_context?
+      HeroHelper.run_inside_dir(project_dir){ super }
+    else
+      super
+    end
+  end
+
+  def self.project_context?
+    ! @project_context.nil?
+  end
+
+  def self.project_dir
+    return unless project_context?
+    project_context[:dir]
   end
 
   def self.project_context
-    @project_context ||= {}
+    @project_context
   end
 
   def self.editor
