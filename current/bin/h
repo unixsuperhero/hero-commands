@@ -924,7 +924,8 @@ class ListFilter
   attr_reader :original, :list, :patterns
   attr_reader :accessor, :opts
   def initialize(list, *patterns, accessor: nil, **opts, &block)
-    @original, @list, @patterns = list.dup, list, patterns
+    @original, @list = list.dup, list
+    @patterns = patterns.map{|pat| pat.is_a?(Regexp) ? pat : Regexp.new(pat, ?i) }
     @accessor = accessor
     @accessor ||= block if block_given?
     @opts = opts
