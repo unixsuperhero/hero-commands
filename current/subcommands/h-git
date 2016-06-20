@@ -258,7 +258,7 @@ class GitSubcommand
   register_subcommand(:cbranch, :cobranch){
     # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
-    branches = HeroHelper.output_lines_from("git branch").map{|b|
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
       b.sub(/^../, '').sub(/.* -> /, '')
     }
 
@@ -291,7 +291,7 @@ class GitSubcommand
   register_subcommand(:branch){
     # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
-    branches = HeroHelper.output_lines_from("git branch").map{|b|
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
       b.sub(/^../, '').sub(/.* -> /, '')
     }
 
