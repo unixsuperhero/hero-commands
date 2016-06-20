@@ -28,17 +28,17 @@ class ProjectSubcommand
     configuration.read!
   }}
 
-  no_subcommand{
-    matcher = SubcommandMatcher.new(config.data)
-    pmap = matcher.subcommand_map
-    syntax = matcher.syntax
-    max_len = syntax.values.map(&:length).max
-    fmt = " %-#{max_len}s => %s"
-    syntax.each{|name,syn| puts format(fmt, syn, pmap[name]) }
-    # ap projects: matcher.subcommands,
-    #   subcommand: subcommand,
-    #   match: matcher.match(subcommand)
-  }
+  # no_subcommand{
+  #   matcher = SubcommandMatcher.new(config.data)
+  #   pmap = matcher.subcommand_map
+  #   syntax = matcher.syntax
+  #   max_len = syntax.values.map(&:length).max
+  #   fmt = " %-#{max_len}s => %s"
+  #   syntax.each{|name,syn| puts format(fmt, syn, pmap[name]) }
+  #   # ap projects: matcher.subcommands,
+  #   #   subcommand: subcommand,
+  #   #   match: matcher.match(subcommand)
+  # }
 
   dynamic_subcommand{
     ProjectHelper.tmux_session_for_project(subcommand)
@@ -94,21 +94,19 @@ class ProjectSubcommand
     puts 'done'
   }
 
-  list_projects = Proc.new{|args|
-    Config.new( File.join(ENV['HOME'], 'projects.yml') )['projects'].map{|p|
-      p['name']
-    }.tap(&method(:puts))
+  register_subcommand(:all, :list, :show, :print) {
+    matcher = SubcommandMatcher.new(config.data)
+    pmap = matcher.subcommand_map
+    syntax = matcher.syntax
+    max_len = syntax.values.map(&:length).max
+    fmt = " %-#{max_len}s => %s"
+    syntax.each{|name,syn| puts format(fmt, syn, pmap[name]) }
   }
 
-  register_subcommand :all, &list_projects
-  register_subcommand :list, &list_projects
-  register_subcommand :show, &list_projects
-  register_subcommand :print, &list_projects
-
   register_subcommand :dir do
-    projects = Config.new(File.join(ENV['HOME'],'projects.yml'))
+    # projects = Config.new(File.join(ENV['HOME'],'projects.yml'))
 
-    project = projects['projects'].find{|p|
+    project = config.data.find{|p|
       p['name'] == args.first
     }
 
