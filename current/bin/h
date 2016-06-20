@@ -1106,7 +1106,7 @@ class MainCommand
 
   def self.project_dir
     return unless project_context?
-    project_context[:dir]
+    project_context[:data]
   end
 
   def self.project_context
