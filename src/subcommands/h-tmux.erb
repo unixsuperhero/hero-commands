@@ -2,6 +2,13 @@
 class TmuxSubcommand
   include ShellCommandable
 
+  let(:sessions) {
+    HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
+      next unless l[/^\S[^:]*:/]
+      l.sub(/:.*/, '')
+    }.compact
+  }
+
   register_subcommand(:commands) {
     cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
     cmds = ListFilter.run(cmds, *args) if args.any?
@@ -38,8 +45,12 @@ class TmuxSubcommand
   register_subcommand(:new, :make, :start, :create) {
     name, path = args.first(2)
 
+    error_exit('A session already exists named: "%s"' % name) if sessions.include?(name)
+
     cmd = "tmux new #{name.nil? ? '' : "-s #{name}"} #{path && File.directory?(path) && "-c '#{path}'"}".shellsplit
     ap(new_tmux_session_cmd: cmd)
+
+    HeroHelper.exec_from(cmd)
   }
 
   register_subcommand(:attach, :join) {
@@ -58,13 +69,12 @@ class TmuxSubcommand
 
     cmd = "tmux a -t '#{session_name}'".shellsplit
     ap(join_tmux_session_cmd: cmd)
+
+    HeroHelper.exec_from(cmd)
   }
 
   register_subcommand(:sessions, :list, :ls) {
-    puts HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
-      next l unless l[/^\S[^:]*:/]
-      l.sub(/:.*/, '')
-    }
+    puts sessions
   }
 end
 
