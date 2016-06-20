@@ -942,7 +942,7 @@ class ListFilter
       apply_pattern(items, pattern)
     }
   end
-  alia_method :use_and, :and
+  alias_method :use_and, :and
   alias_method :with_and, :and
 
   def or
