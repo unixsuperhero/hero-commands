@@ -47,7 +47,16 @@ class TmuxSubcommand
 
     error_exit("A session-name is required for joining tmux session...") unless name
 
-    cmd = "tmux a -t '#{name}'".shellsplit
+    sessions = HeroHelper.output_lines_from('tmux', 'ls').map{|l|
+      next unless l[/^\S[^:]*:/]
+      l.sub(/:.*/, '')
+    }
+
+    session_name = sessions.find{|sn| sn[Regexp.new(name, ?i)] }
+
+    error_exit('No session found matching the pattern: "%s"' % name) unless session_name
+
+    cmd = "tmux a -t '#{session_name}'".shellsplit
     ap(join_tmux_session_cmd: cmd)
   }
 
