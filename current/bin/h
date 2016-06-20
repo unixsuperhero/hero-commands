@@ -1139,6 +1139,11 @@ class MainCommand
     exit 0
   }
 
+  register_subcommand(:run) {
+    error_exit('Nothing to run...pass in cmd as arguments.') if args.empty?
+    puts HeroHelper.output_from(*args)
+  }
+
   register_subcommand(:fix) {
     unless Object.const_defined?(:FixSubcommand)
       found = PathEnv.find('new_h-fix')
