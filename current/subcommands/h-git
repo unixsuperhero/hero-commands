@@ -209,8 +209,100 @@ class GitSubcommand
     printf Git.path_to_git_dir
   }
 
+  register_subcommand(:add){
+    args.push(?.) if args.empty?
+
+    HeroHelper.system_from('git', 'add', *args)
+
+    exit 0
+  }
+
+  register_subcommand(:addall, :aa){
+    if args.empty?
+      HeroHelper.system_from('git', 'add', '--all')
+    else
+      HeroHelper.system_from('git', 'add', '--all', *args)
+    end
+
+    exit 0
+  }
+
+  register_subcommand(:sfiles){
+    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    statuses = HeroHelper.output_lines_from("git status -s").map{|b|
+      b.sub(/^.../, '').sub(/.* -> /, '')
+    }
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:status){
+    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    statuses = HeroHelper.output_lines_from("git status -s")
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:cbranch, :cobranch){
+    # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    branches = HeroHelper.output_lines_from("git branch").map{|b|
+      b.sub(/^../, '').sub(/.* -> /, '')
+    }
+
+    branches = ListFilter.run(branches, *args) if args.any?
+
+    exit 1 if branches.empty?
+
+    if branches.size > 1
+      puts "More than one match found:"
+      puts format('  %s', branches.join("\n  "))
+    else
+      puts format('Checking out: %s', branches.first)
+      HeroHelper.system_from('git', 'checkout', branches.first)
+    end
+
+    puts branches
+    exit 0
+
+    # -------------
+
+    if args.empty?
+      puts branches
+      exit 0
+    end
+
+    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
+    exit 0
+  }
+
   register_subcommand(:branch){
-    branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+    # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    branches = HeroHelper.output_lines_from("git branch").map{|b|
+      b.sub(/^../, '').sub(/.* -> /, '')
+    }
+
+    branches = ListFilter.run(branches, *args) if args.any?
+
+    exit 1 if branches.empty?
+
+    puts branches
+    exit 0
+
+    # -------------
 
     if args.empty?
       puts branches

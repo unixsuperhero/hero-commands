@@ -906,6 +906,57 @@ class ProjectHelper
 end
 
 
+class ListFilter
+  class << self
+    def run(list, *patterns, accessor: nil, **opts, &block)
+      self.or(list, *patterns, accessor: nil, **opts, &block)
+    end
+
+    def and(list, *patterns, accessor: nil, **opts, &block)
+      new(list, *patterns, accessor: nil, **opts, &block).and
+    end
+
+    def or(list, *patterns, accessor: nil, **opts, &block)
+      new(list, *patterns, accessor: nil, **opts, &block).or
+    end
+  end
+
+  attr_reader :original, :list, :patterns
+  attr_reader :accessor, :opts
+  def initialize(list, *patterns, accessor: nil, **opts, &block)
+    @original, @list, @patterns = list.dup, list, patterns
+    @accessor = accessor
+    @accessor ||= block if block_given?
+    @opts = opts
+  end
+
+  def apply_pattern(list, pattern)
+    list.select{|item|
+      item = accessor.call(item) if accessor
+      item[pattern]
+    }
+  end
+
+  def and
+    @and_result ||= patterns.inject(list){|items,pattern|
+      apply_pattern(items, pattern)
+    }
+  end
+  alia_method :use_and, :and
+  alias_method :with_and, :and
+
+  def or
+    @or_result ||= patterns.flat_map{|pattern|
+      apply_pattern(list, pattern)
+    }.uniq
+  end
+  alias_method :use_or, :or
+  alias_method :with_or, :or
+end
+
+
+# vim: ft=ruby
+
 class HeroHelper
   class << self
     def string_to_underscores(str)
@@ -953,6 +1004,10 @@ class HeroHelper
       system cmd_from(*args, out: w)
       w.close
       r.read.tap{|output| r.close }
+    end
+
+    def output_lines_from(*args)
+      output_from(*args).lines.map(&:chomp)
     end
 
     class PipeCommand
@@ -1033,15 +1088,28 @@ class MainCommand
 
   def self.run(args=argv)
     if args.first && args.first[0] == ?@
-      project_data = ProjectHelper.project_for(args.first)
-      project_context.merge!(project_data) if project_data
+      @project_context = ProjectHelper.project_for(args.first)
       args.shift
     end
-    super
+
+    if project_context?
+      HeroHelper.run_inside_dir(project_dir){ super }
+    else
+      super
+    end
+  end
+
+  def self.project_context?
+    ! @project_context.nil?
+  end
+
+  def self.project_dir
+    return unless project_context?
+    project_context[:dir]
   end
 
   def self.project_context
-    @project_context ||= {}
+    @project_context
   end
 
   def self.editor

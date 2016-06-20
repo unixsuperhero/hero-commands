@@ -47,6 +47,10 @@ class HeroHelper
       r.read.tap{|output| r.close }
     end
 
+    def output_lines_from(*args)
+      output_from(*args).lines.map(&:chomp)
+    end
+
     class PipeCommand
       attr_accessor :cmd, :reader, :writer
       def initialize(cmd)
