@@ -1094,7 +1094,6 @@ class MainCommand
     end
 
     if project_context?
-      ap cntxt: project_context, cntxt?: project_context?, pdir: project_dir
       HeroHelper.run_inside_dir(project_dir){ super }
     else
       super
