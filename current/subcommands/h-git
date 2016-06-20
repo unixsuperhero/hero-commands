@@ -157,6 +157,16 @@ end
 class GitSubcommand
   include ShellCommandable
 
+  let(:status_lines) {
+    HeroHelper.output_lines_from("git status -s")
+  }
+
+  let(:status_files) {
+    status_lines.map{|b|
+      b.sub(/^.../, '').sub(/.* -> /, '')
+    }
+  }
+
   register_subcommand(:current_branch){
     puts format("current branch: %s", Git.current_branch)
   }
@@ -237,12 +247,50 @@ class GitSubcommand
     exit 0
   }
 
+  register_subcommand(:vsfiles){
+    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    statuses = status_files
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    if statuses.count < 4
+      HeroHelper.exec_from('vim', '-O', *statuses)
+    else
+      HeroHelper.exec_from('vim', *statuses)
+    end
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:vstatus){
+    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
+
+    statuses = status_lines
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    files = statuses.map{|l| l.sub(/^.../,'').sub(/.* -> /, '') }
+
+    if statuses.count < 4
+      HeroHelper.exec_from('vim', '-O', *files)
+    else
+      HeroHelper.exec_from('vim', *files)
+    end
+
+    puts statuses
+    exit 0
+  }
+
   register_subcommand(:sfiles){
     # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
-    statuses = HeroHelper.output_lines_from("git status -s").map{|b|
-      b.sub(/^.../, '').sub(/.* -> /, '')
-    }
+    statuses = status_files
 
     statuses = ListFilter.run(statuses, *args) if args.any?
 
@@ -255,7 +303,7 @@ class GitSubcommand
   register_subcommand(:status){
     # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
-    statuses = HeroHelper.output_lines_from("git status -s")
+    statuses = status_lines
 
     statuses = ListFilter.run(statuses, *args) if args.any?
 
