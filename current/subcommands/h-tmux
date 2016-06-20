@@ -38,7 +38,7 @@ class TmuxSubcommand
   register_subcommand(:new, :make, :start, :create) {
     name, path = args.first(2)
 
-    cmd = "tmux new #{name.nil? ? '' : "-s #{name}"} #{File.directory?(path) && "-c '#{path}'"}".shellsplit
+    cmd = "tmux new #{name.nil? ? '' : "-s #{name}"} #{path && File.directory?(path) && "-c '#{path}'"}".shellsplit
     ap(new_tmux_session_cmd: cmd)
   }
 
