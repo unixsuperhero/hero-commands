@@ -1141,7 +1141,7 @@ class MainCommand
 
   register_subcommand(:run) {
     error_exit('Nothing to run...pass in cmd as arguments.') if args.empty?
-    puts HeroHelper.output_from(*args)
+    puts HeroHelper.exec_from(*args)
   }
 
   register_subcommand(:fix) {
