@@ -42,7 +42,7 @@ class HeroHelper
 
     def output_from(*args)
       r,w = IO.pipe
-      system cmd_from(*args, out: w)
+      system cmd_from(*args), out: w
       w.close
       r.read.tap{|output| r.close }
     end
