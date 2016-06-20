@@ -209,6 +209,16 @@ class GitSubcommand
     printf Git.path_to_git_dir
   }
 
+  register_subcommand(:commit, :cm, :ci){
+    if args.empty?
+      HeroHelper.system_from('git', 'commit', '-m', 'misc. updates')
+    else
+      HeroHelper.system_from('git', 'commit', '-m', args.join(' '))
+    end
+
+    exit 0
+  }
+
   register_subcommand(:add){
     args.push(?.) if args.empty?
 
