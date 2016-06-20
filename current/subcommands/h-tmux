@@ -2,8 +2,60 @@
 class TmuxSubcommand
   include ShellCommandable
 
-  register_subcommand(:ls, :list) {
-    puts `tmux ls`
+  register_subcommand(:commands) {
+    cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
+    cmds = ListFilter.run(cmds, *args) if args.any?
+
+    if cmds.empty?
+      puts 'No matching commands...'
+      exit 1
+    end
+
+    puts cmds
+  }
+
+  register_subcommand(:keys) {
+    keys = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit)
+    keys = ListFilter.run(keys, *args) if args.any?
+
+    if keys.empty?
+      puts 'No matching keys...'
+      exit 1
+    end
+
+    puts keys
+  }
+
+  register_subcommand(:split) {
+    error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
+    HeroHelper.exec_from('tmux', 'splitw')
+  }
+
+  register_subcommand(:vsplit) {
+    error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
+  }
+
+  register_subcommand(:new, :make, :start, :create) {
+    name, path = args.first(2)
+
+    cmd = "tmux new #{name.nil? ? '' : "-s #{name}"} #{File.directory?(path) && "-c '#{path}'"}".shellsplit
+    ap(new_tmux_session_cmd: cmd)
+  }
+
+  register_subcommand(:attach, :join) {
+    name = args.first
+
+    error_exit("A session-name is required for joining tmux session...") unless name
+
+    cmd = "tmux a -t '#{name}'".shellsplit
+    ap(join_tmux_session_cmd: cmd)
+  }
+
+  register_subcommand(:sessions, :list, :ls) {
+    puts HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
+      next l unless l[/^\S[^:]*:/]
+      l.sub(/:.*/, '')
+    }
   }
 end
 
