@@ -18,6 +18,7 @@ class TestSubcommand
 
   register_subcommand(:four) {
     ap(inside: 'four subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    exit 0
   }
 
 end
