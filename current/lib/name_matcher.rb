@@ -16,7 +16,7 @@ class NameMatcherRewrite
   end
 
   def name_groups
-    @name_groups ||== grouped_by_values.inject({}){|h,(k,names)|
+    @name_groups ||= grouped_by_values.inject({}){|h,(k,names)|
       names.map{|name| h.merge!(name => names) }
       h
     }
