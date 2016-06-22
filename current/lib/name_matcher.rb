@@ -8,6 +8,13 @@ class NameMatcherRewrite
         define_singleton_method(k){ v }
       }
     end
+
+    def merge(hash)
+      @to_h.merge!(hash)
+      hash.each{|k,v|
+        define_singleton_method(k){ v }
+      }
+    end
   end
 
   attr_accessor :name_map, :names
@@ -24,8 +31,8 @@ class NameMatcherRewrite
   end
 
   def name_groups
-    @name_groups ||= grouped_by_values.inject({}){|h,(k,names)|
-      names.map{|name| h.merge!(name => names) }
+    @name_groups ||= grouped_by_values.inject({}){|h,(k,grouped_names)|
+      grouped_names.map{|name| h.merge!(name => grouped_names) }
       h
     }
   end
