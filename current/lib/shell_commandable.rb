@@ -51,8 +51,8 @@ module ShellCommandable
       if @subcommand.index(?:) && @subcommand.index(?:) > 0
         @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
 
-        ap(subcommand: @subcommand, chain: @subcommand_chain)
-        exit 0
+        ap(subcommand: @subcommand, chain: @subcommand_chain, args: args)
+        exit 0 if @subcommand == 'four'
       end
 
       @runner ||= subcommand_matcher.match(@subcommand)
