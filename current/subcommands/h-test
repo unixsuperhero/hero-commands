@@ -1,14 +1,25 @@
-
 class TestSubcommand
   include ShellCommandable
 
-  register_subcommand(:underscorify) do
-    puts args.map(&HeroHelper.method(:string_to_underscores))
-  end
+  register_subcommand(:chain) {
+    ap(inside: 'chain subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    %w[ hello world one two three ]
+  }
 
-  register_subcommand(:classify) do
-    puts args.map(&HeroHelper.method(:string_to_classname))
-  end
+  register_subcommand(:two) {
+    ap(inside: 'two subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    'hi'
+  }
+
+  register_subcommand(:three) {
+    ap(inside: 'three subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    nil
+  }
+
+  register_subcommand(:four) {
+    ap(inside: 'four subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+  }
+
 end
 
 MainCommand.register_subcommand(:test) {
