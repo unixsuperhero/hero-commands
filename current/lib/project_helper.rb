@@ -9,10 +9,7 @@ class NameMatcherRewrite
 
   def grouped_by_values
     @grouped_by_values ||= name_map.map{|k,v|
-      [
-        v,
-        names.select{|oname| name_map[oname] == v }
-      ]
+      [v, names.select{|oname| name_map[oname] == v }]
     }
   end
 
@@ -52,7 +49,6 @@ class NameMatcherRewrite
       shortest = shortest_partials[name]
       next [name,name] if shortest == name
       [name, format('%s[%s]', name[0,shortest.length], name[(shortest.length)..-1])]
-      # l,r = name.split(/(?<=^#{shortest_partials[name]})/)
     }.to_h
   end
 
@@ -75,10 +71,8 @@ class NameMatcherRewrite
   end
 
   def match(str)
-    info.find{|name,info|
-      next unless info[:matching_partials].include?(str)
-      return info
-    }
+    found = info.find{|name,info| info[:matching_partials].include?(str) }
+    found.last if found
   end
 end
 
