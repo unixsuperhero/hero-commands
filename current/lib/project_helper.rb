@@ -51,7 +51,7 @@ class NameMatcherRewrite
     @usages ||= names.map{|name|
       shortest = shortest_partials[name]
       next [name,name] if shortest == name
-      [name, format('%s[%s]', name[0,shortest.length], name[(shortest.length - 1)..-1])]
+      [name, format('%s[%s]', name[0,shortest.length], name[(shortest.length)..-1])]
       # l,r = name.split(/(?<=^#{shortest_partials[name]})/)
     }.to_h
   end
