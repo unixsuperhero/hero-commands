@@ -360,6 +360,9 @@ module ShellCommandable
         @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
       end
 
+      ap(subcommand: @subcommand, chain: @subcommand_chain)
+      exit 0
+
       @runner ||= subcommand_matcher.match(@subcommand)
 
       if @runner
