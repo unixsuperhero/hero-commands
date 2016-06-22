@@ -97,7 +97,7 @@ class ProjectSubcommand
 
   register_subcommand(:all, :list, :show, :print) {
     all_info = project_matcher.info
-    max_usage_len = all_info.map(&:usage).max_by(&:length).length
+    max_usage_len = all_info.values.map(&:usage).max_by(&:length).length
     #matcher = NameMatcher.new(config.data)
     #pmap = matcher.name_map
     #syntax = matcher.syntax
