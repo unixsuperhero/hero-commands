@@ -48,7 +48,7 @@ module ShellCommandable
         end
       end
 
-      if @subcommand.index(?:) > 0
+      if @subcommand.index(?:) && @subcommand.index(?:) > 0
         @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
       end
 
