@@ -58,6 +58,15 @@ module ShellCommandable
         command_output = nil
         run_with_hooks{ command_output = @runner.data.call }
 
+        # TODO: figure out how to pass specific args to a subcmd in the middle
+        #       of the chain...we could do something like subcmdname:value
+        #       so for example: h git branch:checkout feature.date.autoparser checkout:master
+        #
+        #       maybe instead of using just the subcmd arg to specify what is
+        #       chained in the same handler, use a separator that sits between
+        #       where one set of args end and next subcmd begins like '\;'
+        #       because it is escaped...it shouldn't interfere with bash or zsh
+        #       (and find uses it)
         if @subcommand_chain
           if command_output
             if command_output.is_a?(Array)
