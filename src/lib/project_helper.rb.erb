@@ -5,7 +5,7 @@ class ProjectHelper
   class << self
     def project_for(partial)
       partial = partial[1..-1] if partial[0] == ?@
-      project_matcher.match_with_data(partial)
+      project_matcher.match(partial)
     end
 
     def config
@@ -32,7 +32,7 @@ class ProjectHelper
     end
 
     def project_matcher
-      NameMatcher.from(config.data)
+      NameMatcher.new(config.data)
     end
 
     def yaml_file
@@ -40,7 +40,8 @@ class ProjectHelper
     end
 
     def is_project?(partial)
-      full_name = project_matcher.match_name(partial)
+      project_matcher.match(partial).is_a?(Value)
+      # full_name = project_matcher.match(partial).name
     end
 
     def projects
@@ -48,7 +49,8 @@ class ProjectHelper
     end
 
     def dir_for(project_partial)
-      project_matcher.match(project_partial)
+      m = project_matcher.match(project_partial)
+      m.data if m
     end
 
     def dirs
@@ -56,10 +58,12 @@ class ProjectHelper
     end
 
     def tmux_session_for_project(project_name)
-      name = project_matcher.match_name(project_name)
-      path = project_matcher.match(project_name)
+      proj = project_matcher.match(project_name)
 
-      error_exit('No project found matching "%s"...' % project_name) unless name
+      error_exit('No project found matching "%s"...' % project_name) unless proj
+
+      name = proj.name
+      path = proj.data
 
       puts
       puts format('Project Name: %s', name)
