@@ -50,10 +50,10 @@ module ShellCommandable
 
       if @subcommand.index(?:) && @subcommand.index(?:) > 0
         @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
-      end
 
-      ap(subcommand: @subcommand, chain: @subcommand_chain)
-      exit 0
+        ap(subcommand: @subcommand, chain: @subcommand_chain)
+        exit 0
+      end
 
       @runner ||= subcommand_matcher.match(@subcommand)
 
