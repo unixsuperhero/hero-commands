@@ -25,6 +25,15 @@ class CommandTemplate
       end
     end
 
+    def run_inside_dir(dir, &block)
+      return unless block_given?
+      Dir.pwd.tap{|pwd|
+        Dir.chdir(dir)
+        block.call
+        Dir.chdir(pwd)
+      }
+    end
+
     def erb_files
       move_to_repo_base
       Dir['src/*/**/*.erb'].sort_by{|f| File.basename(f, '.erb').length * -1 }
@@ -55,6 +64,16 @@ class CommandTemplate
       system('git', 'commit', '-m', format('src/: %s', commit_msg))
       system('git', 'add', '--all', 'current')
       system('git', 'commit', '-m', format('current/: %s', commit_msg))
+
+      current_and_src_files  = Dir['current/**/*'].select{|f| ! File.directory?(f) }.map{|f| f.sub(%r{^current/}, '') }
+      current_and_src_files += Dir['src/**/*'].select{|f| ! File.directory?(f) }.map{|f| f.sub(%r{^src/}, '').sub(/[.]erb$/i, '') }
+      current_and_src_files = current_and_src_files.sort.uniq
+      run_inside_dir(Dir.home) {
+        current_and_src_files.select{|f| File.exist?(f) }.each{|f|
+          system('git', 'add', f)
+        }
+        system('git', 'commit', '-m', format('~/: %s', commit_msg))
+      }
       # puts `rsync -avzn --exclude='.DS_Store' --exclude='lib/' --exclude='lib/*' current/ ~/`
     end
 
