@@ -1,5 +1,16 @@
 
 class NameMatcherRewrite
+  class NameInfo
+    attr_reader :to_h
+
+    def initialize(hash)
+      @to_h = hash
+      hash.each{|k,v|
+        define_singleton_method(k){ v }
+      }
+    end
+  end
+
   attr_accessor :name_map, :names
 
   def initialize(hash)
@@ -56,22 +67,22 @@ class NameMatcherRewrite
     @info ||= names.map{|name|
       [
         name,
-        {}.tap{|h|
-          h.merge!(name: name)
-          h.merge!(data: name_map[name])
-          h.merge!(similar_names: name_groups[name])
-          h.merge!(partials: partials[name])
-          h.merge!(matching_partials: uniq_partials[name])
-          h.merge!(shortest_partial: shortest_partials[name])
-          h.merge!(syntax: usages[name])
-          h.merge!(usage: usages[name])
-        }
+        NameInfo.new(
+          name: name,
+          data: name_map[name],
+          similar_names: name_groups[name],
+          partials: partials[name],
+          matching_partials: uniq_partials[name],
+          shortest_partial: shortest_partials[name],
+          syntax: usages[name],
+          usage: usages[name],
+        )
       ]
     }.to_h
   end
 
   def match(str)
-    found = info.find{|name,info| info[:matching_partials].include?(str) }
+    found = info.find{|name,info| info.matching_partials.include?(str) }
     found.last if found
   end
 end
