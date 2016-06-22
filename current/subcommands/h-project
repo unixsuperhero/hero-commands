@@ -4,7 +4,7 @@
 class ProjectSubcommand
   include ShellCommandable
 
-  let(:project_matcher) { SubcommandMatcher.from(config.data) }
+  let(:project_matcher) { NameMatcher.new(config.data) }
   let(:yaml_file) { File.join(Dir.home, 'projects.yml') }
   let(:config_after_read) {Proc.new{|this|
     this.data.map{|k,v|
@@ -77,8 +77,9 @@ class ProjectSubcommand
   register_subcommand(:remove) {
     error_exit('at least 1 project name must be given') if args.empty?
     args.each do |arg|
-      name = project_matcher.match_name(arg)
-      path = project_matcher.match(arg)
+      match = project_matcher.match(arg)
+      name = match.name
+      path = match.data
       puts
       printf('Removing project "%s" => "%s"...', name, path)
       config.data.delete(name)
@@ -95,12 +96,17 @@ class ProjectSubcommand
   }
 
   register_subcommand(:all, :list, :show, :print) {
-    matcher = SubcommandMatcher.new(config.data)
-    pmap = matcher.subcommand_map
-    syntax = matcher.syntax
-    max_len = syntax.values.map(&:length).max
-    fmt = " %-#{max_len}s => %s"
-    syntax.each{|name,syn| puts format(fmt, syn, pmap[name]) }
+    all_info = project_matcher.info
+    max_usage_len = all_info.map(&:usage).max_by(&:length).length
+    #matcher = NameMatcher.new(config.data)
+    #pmap = matcher.name_map
+    #syntax = matcher.syntax
+    #max_len = syntax.values.map(&:length).max
+    #fmt = " %-#{max_len}s => %s"
+    fmt = ' %s => %s'
+    all_info.each{|name,info|
+      puts format(' %s => %s', info.usage.rjust(max_usage_len), info.data)
+    }
   }
 
   register_subcommand :dir do
@@ -155,11 +161,12 @@ class ProjectSubcommand
 
     def self.project_matcher
       name_map = project_config.projects.map{|p| [p['name'], p] }.to_h
-      @project_matcher = SubcommandMatcher.new(name_map)
+      @project_matcher = NameMatcher.new(name_map)
     end
 
     def self.matching_project(name)
-      project_matcher.match(name)
+      m = project_matcher.match(name)
+      m.data if m
     end
 
     def self.tmux_session_exists?(name)

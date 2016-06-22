@@ -41,7 +41,7 @@ class CurlSubcommand
     puts
     puts '  OPTION(s):'
     puts
-    print_format = options_matcher.print_format
+    print_format = options_matcher.usages # print_format
     option_settings.each do |k,v|
       val = v.is_a?(Proc) ? '=VALUE' : ''
       puts format('    %s%s', print_format[k], val)
@@ -59,14 +59,14 @@ class CurlSubcommand
   end
 
   def options_matcher
-    SubcommandMatcher.from(option_settings)
+    NameMatcher.new(option_settings)
   end
 
   def converted_options
     options.map{|opt|
       name,val = opt.split(?=, 2)
       literal = options_matcher.match(name)
-      literal.is_a?(Proc) ? literal.call(opt) : literal
+      literal.data.is_a?(Proc) ? literal.data.call(opt) : literal.data
     }
   end
 end
