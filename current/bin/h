@@ -363,7 +363,7 @@ module ShellCommandable
         exit 0 if @subcommand == 'four'
       end
 
-      @runner ||= subcommand_matcher.match(@subcommand)
+      @runner = subcommand_matcher.match(@subcommand)
 
       if @runner
         command_output = nil
