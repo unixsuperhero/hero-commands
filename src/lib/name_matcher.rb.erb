@@ -1,3 +1,70 @@
+class NameMatcherRewrite
+  attr_accessor :name_map, :names
+  attr_accessor :grouped_by_values, :name_groups, :partials
+
+  def initialize(hash)
+    @name_map = hash
+    @names = hash.keys
+    @grouped_by_values = @name_map.group_by{|k,v| v }
+    @name_groups = @grouped_by_values.flat_map{|k,names| names.map{|name| [name, names] } }.to_h
+    @partials = @names.map{|name| [name, partials_for(name)] }.to_h
+  end
+
+  def partials_for(str)
+    str.chars.inject([]) do |arr,c|
+      arr.push((arr.last || '') + c)
+    end
+  end
+
+  def uniq_partials
+    @uniq_partials ||= names.map{|name|
+      other_partials = (names - name_groups[name]).flat_map{|oname| partials[oname] }.sort.uniq
+      other_partials -= [name]
+      [name, partials[name] - other_partials]
+    }.to_h
+  end
+
+  def shortest_partials
+    @shortest_partials ||= names.map{|name|
+      [name, uniq_partials[name].min_by(&:length)]
+    }.to_h
+  end
+
+  def usages
+    @usages ||= names.map{|name|
+      shortest = shortest_partials[name]
+      next [name,name] if shortest == name
+      [name, format('%s[%s]', name[0,shortest.length], name[(shortest.length - 1)..-1])]
+      # l,r = name.split(/(?<=^#{shortest_partials[name]})/)
+    }.to_h
+  end
+
+  def info
+    @info ||= names.map{|name|
+      [
+        name,
+        {}.tap{|h|
+          h.merge!(name: name)
+          h.merge!(data: name_map[name])
+          h.merge!(similar_names: name_groups[name])
+          h.merge!(partials: partials[name])
+          h.merge!(matching_partials: uniq_partials[name])
+          h.merge!(shortest_partial: shortest_partials[name])
+          h.merge!(syntax: usages[name])
+          h.merge!(usage: usages[name])
+        }
+      ]
+    }.to_h
+  end
+
+  def match(str)
+    info.find{|name,info|
+      next unless info[:matching_partials].include?(str)
+      return info
+    }
+  end
+end
+
 class NameMatcher
   class << self
     def from(hash)
