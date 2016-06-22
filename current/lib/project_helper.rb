@@ -1,14 +1,30 @@
 
 class NameMatcherRewrite
   attr_accessor :name_map, :names
-  attr_accessor :grouped_by_values, :name_groups, :partials
 
   def initialize(hash)
     @name_map = hash
     @names = hash.keys
-    @grouped_by_values = @name_map.group_by{|k,v| v }
-    @name_groups = @grouped_by_values.flat_map{|k,names| names.map{|name| [name, names] } }.to_h
-    @partials = @names.map{|name| [name, partials_for(name)] }.to_h
+  end
+
+  def grouped_by_values
+    @grouped_by_values ||= name_map.map{|k,v|
+      [
+        v,
+        names.select{|oname| name_map[oname] == v }
+      ]
+    }
+  end
+
+  def name_groups
+    @name_groups ||== grouped_by_values.inject({}){|h,(k,names)|
+      names.map{|name| h.merge!(name => names) }
+      h
+    }
+  end
+
+  def partials
+    @partials ||= names.map{|name| [name, partials_for(name)] }.to_h
   end
 
   def partials_for(str)
