@@ -3,6 +3,7 @@ class TestSubcommand
 
   register_subcommand(:chain) {
     ap(inside: 'chain subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    exit 1 if subcommand == 'four'
     %w[ hello world one two three ]
   }
 
