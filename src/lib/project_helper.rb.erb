@@ -70,11 +70,16 @@ class ProjectHelper
       puts format('Project Path: %s', path)
       puts
 
-      if Tmux.session_exists?(name)
-        Tmux.attach_to_session(name)
-      else
-        Tmux.new_session(name, path)
-      end
+      Tmux.force_session(name, path)
+      # if Tmux.session_exists?(name)
+      #   if ENV.has_key?('TMUX')
+      #     Tmux.switch_session(name)
+      #   else
+      #     Tmux.attach_to_session(name)
+      #   end
+      # else
+      #   Tmux.new_session(name, path)
+      # end
     end
   end
 end
