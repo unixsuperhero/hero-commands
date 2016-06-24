@@ -2,23 +2,16 @@
 class TmuxSubcommand
   include ShellCommandable
 
-  let(:sessions) {
-    Tmux.sessions
-  }
-
   dynamic_subcommand{
     HeroHelper.exec_from(*args.unshift(subcommand).unshift('tmux'))
   }
 
-  register_subcommand(:man) {
-    if args.empty?
-      HeroHelper.exec_from('man', 'tmux')
-    else
-      lines = `man tmux | plain`.lines.map(&:chomp)
-      puts args.map{|arg|
-        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}(\s+|#{arg}))/] }.join("\n")
-      }.join("\n---\n")
-    end
+  register_subcommand(:sessions, :ls) {
+    Tmux.sessions(*args).tap{|matching_sessions|
+      error_exit('No matching tmux sessions...') if matching_sessions.empty?
+
+      puts matching_sessions
+    }
   }
 
   register_subcommand(:commands) {
@@ -89,6 +82,28 @@ class TmuxSubcommand
     }
   }
 
+  register_subcommand(:join) {
+    error_exit(
+      "A session-name is required for joining tmux session, also a directory is optional..."
+    ) if args.empty?
+
+    name, path = args.first(2)
+    path ||= Dir.pwd
+
+    Tmux.force_session(name, path)
+  }
+
+  register_subcommand(:man) {
+    if args.empty?
+      HeroHelper.exec_from('man', 'tmux')
+    else
+      lines = `man tmux | plain`.lines.map(&:chomp)
+      puts args.map{|arg|
+        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}(\s+|#{arg}))/] }.join("\n")
+      }.join("\n---\n")
+    end
+  }
+
   register_subcommand(:split) {
     error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
     HeroHelper.exec_from('tmux', 'splitw')
@@ -96,43 +111,6 @@ class TmuxSubcommand
 
   register_subcommand(:vsplit) {
     error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
-  }
-
-  register_subcommand(:new, :make, :start, :create) {
-    name, path = args.first(2)
-
-    error_exit('A session already exists named: "%s"' % name) if sessions.include?(name)
-
-    cmd = "tmux new #{name.nil? ? '' : "-s #{name}"} #{path && File.directory?(path) && "-c '#{path}'"}".shellsplit
-    ap(new_tmux_session_cmd: cmd)
-
-    HeroHelper.exec_from(cmd)
-  }
-
-  register_subcommand(:attach, :join) {
-    name = args.first
-
-    error_exit("A session-name is required for joining tmux session...") unless name
-
-    sessions = HeroHelper.output_lines_from('tmux', 'ls').map{|l|
-      next unless l[/^\S[^:]*:/]
-      l.sub(/:.*/, '')
-    }
-
-    session_name = sessions.find{|sn| sn[Regexp.new(name, ?i)] }
-
-    error_exit('No session found matching the pattern: "%s"' % name) unless session_name
-
-    cmd = "tmux a -t '#{session_name}'".shellsplit
-    ap(join_tmux_session_cmd: cmd)
-
-    HeroHelper.exec_from(cmd)
-  }
-
-  register_subcommand(:sessions, :list, :ls) {
-    Tmux.sessions(*args).tap{|matching_sessions|
-      puts matching_sessions
-    }
   }
 end
 
