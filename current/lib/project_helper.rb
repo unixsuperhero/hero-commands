@@ -234,10 +234,6 @@ class Config
     @file #File.join(Dir.home, 'rippers.yml')
   end
 
-  # def yaml_outfile
-  #   File.join(Dir.home, 'rippers.yml')
-  # end
-
   def yaml_data
     IO.read yaml_file
   end
@@ -289,7 +285,6 @@ class Config
   def data
     return all_data if data_path == []
     data_path.inject(all_data){|result,key|
-      # result.merge!(key => result.fetch(key, {}))[key]
       result[key]
     }
   end
@@ -421,7 +416,6 @@ class ProjectHelper
 
     def is_project?(partial)
       project_matcher.match(partial).is_a?(Value)
-      # full_name = project_matcher.match(partial).name
     end
 
     def projects
@@ -451,15 +445,6 @@ class ProjectHelper
       puts
 
       Tmux.force_session(name, path)
-      # if Tmux.session_exists?(name)
-      #   if ENV.has_key?('TMUX')
-      #     Tmux.switch_session(name)
-      #   else
-      #     Tmux.attach_to_session(name)
-      #   end
-      # else
-      #   Tmux.new_session(name, path)
-      # end
     end
   end
 end

@@ -52,7 +52,6 @@ class LightNovelsRipper < RipperPlugin
 
   def initialize(file='/dev/null')
     @file = file
-    # @splits = @data.split(/(?<=\S)\s*\n(\s*\n)+(?=\S)/i)
     @template = outfile_format
   end
 
@@ -64,7 +63,6 @@ class LightNovelsRipper < RipperPlugin
     return '' if markers.empty?
     pos = 1
     split_length = @splits.count.to_s.length
-    # marker_format = '<b class="marker_label">%%s:</b> <span class="marker_start">%%0%dd</span> <span class="marker_size">%%0%dd</span><br>' % [split_length, split_length]
     marker_format = '<b class="marker_label">%s:</b> <span class="marker_start">%s</span> <span class="marker_size">%s</span><br>'
     markers.map{|f,c|
       format(marker_format, f.sub('.txt', ''), pos, c).tap{

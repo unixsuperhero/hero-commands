@@ -9,9 +9,6 @@ class TodoSubcommand
   let(:arg_matching_project) {
     project_name = ProjectHelper.project_matcher.match_name(args.first)
   }
-  # def self.todo_file
-  #   File.join Dir.home, 'todo.md'
-  # end
 
   register_subcommand(:list) {
     cmd = HeroHelper.cmd_from('less', todo_file)
@@ -20,7 +17,6 @@ class TodoSubcommand
 
   register_subcommand(:edit) {
     HeroHelper.edit_in_editor(todo_file)
-    # exec('%s "%s"' % [ENV.fetch('EDITOR', 'vim'), todo_file])
   }
 end
 

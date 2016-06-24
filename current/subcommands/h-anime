@@ -87,8 +87,6 @@ class AnimeSubcommand
   register_subcommand(:init){
     IO.write('watched.grep', 'watched.grep' + "\n") unless File.exist?('watched.grep')
     HeroHelper.edit_in_editor('watched.grep')
-    # system(HeroHelper.editor, 'watched.grep')
-    # exit 0
   }
 
   register_subcommand(:patterns){
@@ -110,7 +108,6 @@ class AnimeSubcommand
 
     puts
     puts format('Output from Shell Transaction: "%s"', output)
-    # system(format('ls -1 | egrep -vf watched.grep | head -1'))
     exit 0
     # open the next episode and add it to the watched_episodes.grep file
   }
@@ -266,7 +263,6 @@ module FindPatternsInFilenames
     attr_accessor :dir, :subdir, :file_list, :files, :subdirs, :patterns, :multi_patterns, :pwd
     def initialize(dir=Dir.pwd, subdir='file_groups')
       @dir = dir
-      #@subdir = subdir
       @file_list = Dir[File.join(dir, '*.mkv')]
       @files = @file_list.select{|f| File.file?(f) }
       @subdirs = @file_list.select{|f| File.directory?(f) }
