@@ -14,7 +14,9 @@ class TmuxSubcommand
       HeroHelper.exec_from('man', 'tmux')
     else
       lines = `man tmux | plain`.lines.map(&:chomp)
-      puts lines.first(10)
+      puts args.map{|arg|
+        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}\s+)/] }.join("\n")
+      }.join("\n---\n")
     end
   }
 
