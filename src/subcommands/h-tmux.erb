@@ -35,16 +35,57 @@ class TmuxSubcommand
   }
 
   register_subcommand(:keys) {
-    # keys = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit)
-    # keys = ListFilter.run(keys, *args) if args.any?
-
     Tmux.keys(*args).tap{|tmux_keys|
       if tmux_keys.empty?
         puts 'No matching keys...'
         exit 1
       end
 
-      puts tmux_keys.map{|tk| tk.join(' ') }
+      puts tmux_keys
+    }
+  }
+
+  register_subcommand(:windows) {
+    Tmux.windows(*args).tap{|tmux_windows|
+      if tmux_windows.empty?
+        puts 'No matching windows...'
+        exit 1
+      end
+
+      puts tmux_windows
+    }
+  }
+
+  register_subcommand(:panes) {
+    Tmux.panes(*args).tap{|tmux_panes|
+      if tmux_panes.empty?
+        puts 'No matching panes...'
+        exit 1
+      end
+
+      puts tmux_panes
+    }
+  }
+
+  register_subcommand(:buffers) {
+    Tmux.buffers(*args).tap{|tmux_buffers|
+      if tmux_buffers.empty?
+        puts 'No matching buffers...'
+        exit 1
+      end
+
+      puts tmux_buffers
+    }
+  }
+
+  register_subcommand(:clients) {
+    Tmux.clients(*args).tap{|tmux_clients|
+      if tmux_clients.empty?
+        puts 'No matching clients...'
+        exit 1
+      end
+
+      puts tmux_clients
     }
   }
 
