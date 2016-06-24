@@ -586,7 +586,7 @@ class Tmux
       sessions.include?(name)
     end
 
-    def switch_session(name)
+    def switch_to_session(name)
       exec("tmux switchc -t #{name}")
     end
 
@@ -602,22 +602,32 @@ class Tmux
       system("tmux new -d -s #{name.shellescape} -c #{path.shellescape}")
     end
 
+    def in_tmux?
+      ENV.has_key?('TMUX')
+    end
+
+    def join_new_session(name, path=Dir.pwd)
+      if in_tmux?
+        new_detached_session(name, path)
+        switch_to_session(name)
+      else
+        new_session(name, path)
+      end
+    end
+
+    def join_existing_session(name, path=Dir.pwd)
+      if in_tmux?
+        switch_to_session(name)
+      else
+        attach_to_session(name)
+      end
+    end
+
     def force_session(name, path=Dir.pwd, *args)
       if session_exists?(name)
-        if ENV.has_key?('TMUX')
-          switch_session(name)
-        else
-          attach_to_session(name)
-        end
+        join_existing_session(name)
       else
-        if ENV.has_key?('TMUX')
-          puts 'new detached session: %s => %s' % [name,path]
-          new_detached_session(name, path)
-          puts 'switching to session: %s' % [name]
-          switch_session(name)
-        else
-          new_session(name, path)
-        end
+        join_new_session(name, path)
       end
     end
   end
