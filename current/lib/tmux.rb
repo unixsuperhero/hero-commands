@@ -49,6 +49,10 @@ class Tmux
       exec("tmux new -s #{name} -c #{path} " + args.join(' '))
     end
 
+    def new_detached_session(name, path=Dir.pwd)
+      system("tmux new -d -s #{name.shellescape} -c #{path.shellescape}")
+    end
+
     def force_session(name, path=Dir.pwd, *args)
       if session_exists?(name)
         if ENV.has_key?('TMUX')
@@ -58,8 +62,11 @@ class Tmux
         end
       else
         if ENV.has_key?('TMUX')
+          env_tmux_before = ENV['TMUX']
           puts 'new detached session: %s => %s' % [name,path]
-          new_session(name, path, '-d')
+          new_detached_session(name, path)
+          env_tmux_after_new_session = ENV['TMUX']
+          ap(tmux: env_tmux_before, diff_after_new_session: env_tmux_before == env_tmux_after_new_session)
           puts 'switching to session: %s' % [name]
           switch_session(name)
         else
