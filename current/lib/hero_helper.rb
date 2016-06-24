@@ -1,5 +1,21 @@
 class HeroHelper
   class << self
+    def matrix_to_table(matrix)
+      col_sizes = matrix.inject([]){|sizes,cols|
+        cols.map.with_index{|col,i|
+          cur_len = sizes[i] || 0
+          new_len = col.to_s.length
+          new_len > cur_len ? new_len : cur_len
+        }
+      }
+
+      matrix.map{|cols|
+        col_sizes.map.with_index{|csize,i|
+          cols[i].to_s.ljust(csize+1).rjust(csize+2)
+        }.join(?|)
+      }
+    end
+
     def string_to_underscores(str)
       str.split(/[\s_-]+/).flat_map{|part|
         part.split(/(?<=[a-z])(?=[A-Z])/)
