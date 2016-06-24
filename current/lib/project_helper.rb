@@ -325,10 +325,10 @@ class Tmux
 
       return list if patterns.empty?
 
-      matches = ListFilter.run(hash, *patterns){|item| item[3] }
+      matches = ListFilter.run(list, *patterns){|item| item[3] }
       return matches if matches.any?
 
-      ListFilter.run(hash, *patterns){|item| item[3..-1].join(' ')  }
+      ListFilter.run(list, *patterns){|item| item[3..-1].join(' ')  }
     end
 
     def session_exists?(name)
