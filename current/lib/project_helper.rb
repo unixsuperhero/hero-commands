@@ -301,12 +301,15 @@ end
 class Tmux
   class << self
     def sessions(*patterns)
-      list = HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
-        next unless l[/^\S[^:]*:/]
+      list = HeroHelper.output_lines_from(*'tmux ls'.shellsplit).select{|l|
+        l[/^\S[^:]*:/]
+      }.map{|l|
         l.sub(/:.*/, '')
       }.compact
-      patterns.any? ? ListFilter.run(list, *patterns) : list
-      # `tmux ls`.lines.select{|l| l[/^[^:]+:\s+\d/i] }.map{|l| l[/^([^:]+)(?=:\s+\d+)/i] }
+
+      return list if patterns.empty?
+
+      ListFilter.run(list, *patterns)
     end
 
     def commands(*patterns)
@@ -314,23 +317,23 @@ class Tmux
         [ l[/\S+/], l ]
       }.to_h
 
-      if patterns.any?
-        list = ListFilter.run(hash.keys, *patterns)
-        list.map{|key| [ key, hash[key] ] }.to_h
-        # hash.select{|k,v| list.include?(k) }
-      else
-        hash
-      end
+      return hash if patterns.empty?
+
+      list = ListFilter.run(hash.keys, *patterns)
+      list.map{|key| [ key, hash[key] ] }.to_h
     end
 
     def keys(*patterns)
-      hash = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit).flat_map{|l|
-        l.scan(/^(bind-key)\s*(-r)?\s*(-T\s\s*\S\S*)\s*(\S+)\s*(\S.*)$/i) #(?:\s*-+\w+)+\s*(?=\S)(?!-))(\S+\s+\S+)(?:\s*(\S.*))?$/)
+      list = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit).map{|l|
+        l.scan(/^(bind-key)\s*(-r)?\s*(-T\s\s*\S\S*)\s*(\S+)\s*(\S.*)$/i).flatten #(?:\s*-+\w+)+\s*(?=\S)(?!-))(\S+\s+\S+)(?:\s*(\S.*))?$/)
       }
 
-      patterns.any? ? ListFilter.run(hash, *patterns){|item|
-        '%s %s' % [item[3], item[4]]
-      } : hash
+      return list if patterns.empty?
+
+      matches = ListFilter.run(hash, *patterns){|item| item[3] }
+      return matches if matches.any?
+
+      ListFilter.run(hash, *patterns){|item| item[3..-1].join(' ')  }
     end
 
     def session_exists?(name)
