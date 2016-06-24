@@ -57,7 +57,14 @@ class Tmux
           attach_to_session(name)
         end
       else
-        new_session(name, path)
+        if ENV.has_key?('TMUX')
+          puts 'new detached session: %s => %s' % [name,path]
+          new_session(name, path, '-d')
+          puts 'switching to session: %s' % [name]
+          switch_session(name)
+        else
+          new_session(name, path)
+        end
       end
     end
   end
