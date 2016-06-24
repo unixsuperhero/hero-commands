@@ -9,6 +9,16 @@ class TmuxSubcommand
     }.compact
   }
 
+  register_subcommand(:man) {
+    if args.empty?
+      HeroHelper.exec_from('man', 'tmux')
+    else
+      lines = HeroHelper.output_lines_from('man tmux', 'plain')
+      binding.pry
+      puts lines.first(10)
+    end
+  }
+
   register_subcommand(:commands) {
     cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
     cmds = ListFilter.run(cmds, *args) if args.any?
@@ -74,7 +84,9 @@ class TmuxSubcommand
   }
 
   register_subcommand(:sessions, :list, :ls) {
-    puts sessions
+    Tmux.sessions(*args).tap{|matching_sessions|
+      puts matching_sessions
+    }
   }
 end
 
