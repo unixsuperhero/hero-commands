@@ -47,9 +47,10 @@ class SpikeSubcommand
       HeroHelper.system_from('git', 'commit', '--allow-empty', '-m', format('starting %s spike', next_spike_name))
     }
 
-    Tmux.session_exists?(spike_session_name) ?
-      Tmux.attach_to_session(spike_session_name) :
-      Tmux.new_session(spike_session_name, next_spike_dir)
+    Tmux.force_session(spike_session_name, next_spike_dir)
+    # Tmux.session_exists?(spike_session_name) ?
+    #   Tmux.attach_to_session(spike_session_name) :
+    #   Tmux.new_session(spike_session_name, next_spike_dir)
   }
 end
 
