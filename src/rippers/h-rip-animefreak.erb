@@ -22,8 +22,6 @@ class AnimefreakRipper < RipperPlugin
       @dir = File.join(@dir, destination) if destination
       @dir.tap{|d|
         HeroHelper.mkdirs(d)
-        # cmd = HeroHelper.cmd_from('mkdir', '-pv', d)
-        # system(cmd) unless File.directory?(d)
       }
     end
 
@@ -83,9 +81,6 @@ class AnimefreakRipper < RipperPlugin
         return next_page_link
         run(next_page_link, destination)
       end
-      #vid = http.get(link)
-      #vid.saveas(outfile)
-      #vid.shutdown
     end
 
     def mirrors_from_page(page)

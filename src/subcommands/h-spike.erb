@@ -39,7 +39,6 @@ class SpikeSubcommand
 
     spike_session_name = 'spike%s' % next_spike_name
 
-    # `mkdir -pv "#{next_spike_dir}"`
     HeroHelper.mkdirs(next_spike_dir)
 
     HeroHelper.run_inside_dir(next_spike_dir) {
@@ -48,9 +47,6 @@ class SpikeSubcommand
     }
 
     Tmux.force_session(spike_session_name, next_spike_dir)
-    # Tmux.session_exists?(spike_session_name) ?
-    #   Tmux.attach_to_session(spike_session_name) :
-    #   Tmux.new_session(spike_session_name, next_spike_dir)
   }
 end
 

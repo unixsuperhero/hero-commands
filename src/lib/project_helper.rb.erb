@@ -41,7 +41,6 @@ class ProjectHelper
 
     def is_project?(partial)
       project_matcher.match(partial).is_a?(Value)
-      # full_name = project_matcher.match(partial).name
     end
 
     def projects
@@ -71,15 +70,6 @@ class ProjectHelper
       puts
 
       Tmux.force_session(name, path)
-      # if Tmux.session_exists?(name)
-      #   if ENV.has_key?('TMUX')
-      #     Tmux.switch_session(name)
-      #   else
-      #     Tmux.attach_to_session(name)
-      #   end
-      # else
-      #   Tmux.new_session(name, path)
-      # end
     end
   end
 end

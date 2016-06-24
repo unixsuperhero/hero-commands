@@ -3,10 +3,6 @@ class TmuxSubcommand
   include ShellCommandable
 
   let(:sessions) {
-    # HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
-    #   next unless l[/^\S[^:]*:/]
-    #   l.sub(/:.*/, '')
-    # }.compact
     Tmux.sessions
   }
 

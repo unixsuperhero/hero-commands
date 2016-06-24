@@ -56,7 +56,6 @@ class MainCommand
     files = args.flat_map{|arg| PathEnv.search(arg) }
 
     HeroHelper.edit_in_editor(files)
-    # system(files.unshift(editor).shelljoin)
   }
 
   register_subcommand(:pry) {

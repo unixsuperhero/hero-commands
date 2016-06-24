@@ -21,9 +21,6 @@ class BanditSubcommand
 
   dynamic_subcommand {
     run_game subcommand
-    # game = subcommand
-    # pw = config.data[game.to_i]
-    # system './bandit.exp', game, pw
     exit 0
   }
 
@@ -36,7 +33,6 @@ class BanditSubcommand
     pw = config.data[game.to_i]
     Clipboard.copy(pw)
     Clipboard.show_copied_text
-    # `printf "#{pw}" | pbcopy; pbpaste`
     cmd = HeroHelper.cmd_from('scp', 'bandit%d@bandit.labs.overthewire.org:%s' % [game, src], dst)
     system(cmd)
   }
@@ -44,8 +40,6 @@ class BanditSubcommand
   register_subcommand(:scp_to) {
     game,src,dst = args.first(3)
     pw = config.data[game.to_i]
-    # `printf "#{pw}" | pbcopy; pbpaste`
-    # cmd = format('scp "%s" "bandit%d@bandit.labs.overthewire.org:%s"', src, game, dst)
     Clipboard.copy(pw)
     Clipboard.show_copied_text
     cmd = HeroHelper.cmd_from('scp', src, 'bandit%d@bandit.labs.overthewire.org:%s' % [game, dst])
@@ -58,10 +52,6 @@ class BanditSubcommand
 
   register_subcommand(:next) {
     run_game next_game
-    # games = config.data.keys.map(&:to_i)
-    # next_game = games.max
-    # pw = config.data[next_game]
-    # system './bandit.exp', next_game, pw
     exit 0
   }
 
@@ -73,24 +63,19 @@ class BanditSubcommand
     cmd = %{nextgame=$(( $(whoami | egrep -o "[0-9]+") + 1 )); ssh localhost -l "bandit${nextgame}"}
     Clipboard.copy(cmd)
     Clipboard.show_copied_text
-    # `printf '#{cmd}' | pbcopy`
   }
 
   register_subcommand(:site) {
     HeroHelper.exec_from('open', 'http://overthewire.org')
-    # exec(HeroHelper.cmd_from('open', 'http://overthewire.org'))
-    # `open http://overthewire.org`
   }
 
   register_subcommand(:hint) {
-    # `open http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html`
     HeroHelper.exec_from('open', "http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html")
   }
 
   register_subcommand(:password, :pw) {
     game,pw = args.first(2)
     config.merge(game.to_i => pw)
-    # puts format('config saved: %s', config.data)
     puts format('config saved: %s', config.save)
     exit 0
   }

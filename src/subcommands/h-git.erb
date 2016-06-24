@@ -248,7 +248,6 @@ class GitSubcommand
   }
 
   register_subcommand(:vsfiles){
-    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     statuses = status_files
 
@@ -267,7 +266,6 @@ class GitSubcommand
   }
 
   register_subcommand(:vstatus){
-    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     statuses = status_lines
 
@@ -288,7 +286,6 @@ class GitSubcommand
   }
 
   register_subcommand(:sfiles){
-    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     statuses = status_files
 
@@ -301,7 +298,6 @@ class GitSubcommand
   }
 
   register_subcommand(:status){
-    # statuses = `git status | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     statuses = status_lines
 
@@ -314,7 +310,6 @@ class GitSubcommand
   }
 
   register_subcommand(:cbranch, :cobranch){
-    # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
       b.sub(/^../, '').sub(/.* -> /, '')
@@ -347,7 +342,6 @@ class GitSubcommand
   }
 
   register_subcommand(:branch){
-    # branches = `git branch | sed 's/..//;s/.* -> //'`.lines.map(&:chomp)
 
     branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
       b.sub(/^../, '').sub(/.* -> /, '')

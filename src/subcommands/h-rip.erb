@@ -86,9 +86,6 @@ class RipSubcommand
       url = config.data.dig(manga, 'url')
       system('h-rip', url, manga)
     }.join("\n  ")
-
-    # puts 'last-downloaded-urls:'
-    # puts '  %s' % urls.join("\n  ")
   }
 end
 
