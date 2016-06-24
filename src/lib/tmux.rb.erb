@@ -30,11 +30,29 @@ class Tmux
 
       return list if patterns.empty?
 
-      matches = ListFilter.run(list, *patterns){|item| item[3] }
-      return matches if matches.any?
+      matches = ListFilter.run(list, *patterns){|item|
+        item[3]
+      }
 
-      ListFilter.run(list, *patterns){|item| item[3..-1].join(' ')  }
+      matches = ListFilter.run(list, *patterns){|item|
+        item[3..-1].join(' ')
+      } if matches.empty?
+
+      return matches if matches.empty?
+
+      matches.tap{|matrix|
+        puts HeroHelper.matrix_to_table(matrix)
+      }
     end
+
+    # "list-sessions" => "list-sessions (ls) [-F format]",
+    # "list-commands" => "list-commands (lscm) ",
+    #     "list-keys" => "list-keys (lsk) [-t mode-table] [-T key-table]",
+
+    #  "list-buffers" => "list-buffers (lsb) [-F format]",
+    #  "list-clients" => "list-clients (lsc) [-F format] [-t target-session]",
+    #    "list-panes" => "list-panes (lsp) [-as] [-F format] [-t target-window]",
+    #  "list-windows" => "list-windows (lsw) [-a] [-F format] [-t target-session]"
 
     def session_exists?(name)
       sessions.include?(name)
