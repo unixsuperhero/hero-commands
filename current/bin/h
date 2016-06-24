@@ -547,19 +547,40 @@ class Tmux
 
       return matches if matches.empty?
 
-      matches.tap{|matrix|
-        puts HeroHelper.matrix_to_table(matrix)
-      }
+      HeroHelper.matrix_to_table(matches)
     end
 
-    # "list-sessions" => "list-sessions (ls) [-F format]",
-    # "list-commands" => "list-commands (lscm) ",
-    #     "list-keys" => "list-keys (lsk) [-t mode-table] [-T key-table]",
+    def windows(*patterns)
+      list = HeroHelper.output_lines_from(*'tmux list-windows'.shellsplit)
 
-    #  "list-buffers" => "list-buffers (lsb) [-F format]",
-    #  "list-clients" => "list-clients (lsc) [-F format] [-t target-session]",
-    #    "list-panes" => "list-panes (lsp) [-as] [-F format] [-t target-window]",
-    #  "list-windows" => "list-windows (lsw) [-a] [-F format] [-t target-session]"
+      return list if patterns.empty?
+
+      ListFilter.run(list, *patterns)
+    end
+
+    def panes(*patterns)
+      list = HeroHelper.output_lines_from(*'tmux list-panes'.shellsplit)
+
+      return list if patterns.empty?
+
+      ListFilter.run(list, *patterns)
+    end
+
+    def buffers(*patterns)
+      list = HeroHelper.output_lines_from(*'tmux list-buffers'.shellsplit)
+
+      return list if patterns.empty?
+
+      ListFilter.run(list, *patterns)
+    end
+
+    def clients(*patterns)
+      list = HeroHelper.output_lines_from(*'tmux list-clients'.shellsplit)
+
+      return list if patterns.empty?
+
+      ListFilter.run(list, *patterns)
+    end
 
     def session_exists?(name)
       sessions.include?(name)
