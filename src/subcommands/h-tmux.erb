@@ -3,10 +3,11 @@ class TmuxSubcommand
   include ShellCommandable
 
   let(:sessions) {
-    HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
-      next unless l[/^\S[^:]*:/]
-      l.sub(/:.*/, '')
-    }.compact
+    # HeroHelper.output_lines_from(*'tmux ls'.shellsplit).map{|l|
+    #   next unless l[/^\S[^:]*:/]
+    #   l.sub(/:.*/, '')
+    # }.compact
+    Tmux.sessions
   }
 
   register_subcommand(:man) {
@@ -21,27 +22,30 @@ class TmuxSubcommand
   }
 
   register_subcommand(:commands) {
-    cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
-    cmds = ListFilter.run(cmds, *args) if args.any?
+    # cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
+    # cmds = ListFilter.run(cmds, *args) if args.any?
+    Tmux.commands(*args).tap{|tmux_cmds|
+      if tmux_cmds.empty?
+        puts 'No matching commands...'
+        exit 1
+      end
 
-    if cmds.empty?
-      puts 'No matching commands...'
-      exit 1
-    end
-
-    puts cmds
+      ap tmux_cmds
+    }
   }
 
   register_subcommand(:keys) {
-    keys = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit)
-    keys = ListFilter.run(keys, *args) if args.any?
+    # keys = HeroHelper.output_lines_from(*'tmux list-keys'.shellsplit)
+    # keys = ListFilter.run(keys, *args) if args.any?
 
-    if keys.empty?
-      puts 'No matching keys...'
-      exit 1
-    end
+    Tmux.keys(*args).tap{|tmux_keys|
+      if tmux_keys.empty?
+        puts 'No matching keys...'
+        exit 1
+      end
 
-    puts keys
+      puts tmux_keys.map{|tk| tk.join(' ') }
+    }
   }
 
   register_subcommand(:split) {
