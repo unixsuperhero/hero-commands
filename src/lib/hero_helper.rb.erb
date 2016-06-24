@@ -32,17 +32,37 @@ class HeroHelper
       parts.shelljoin
     end
 
+    def system_env_vars
+      { 'MANPAGER' => 'cat' }
+    end
+
     def system_from(*args)
-      system cmd_from(*args)
+      system system_env_vars, cmd_from(*args)
     end
 
     def exec_from(*args)
       exec cmd_from(*args)
     end
 
+    def plainify(str_or_lines)
+      if str_or_lines.is_a?(Array)
+        str_or_lines.map{|l| plainify(l) }
+      else
+        str_or_lines.gsub(/\e\S(\d+;)*\d*[mG]|.\b+/, '')
+      end
+    end
+
+    def plain_from(*args)
+      (output_from(*args) || '').gsub(/\e\S(\d+;)*\d*[mG]|.\b/, '')
+    end
+
+    def plain_lines_from(*args)
+      plain_from(*args).lines.map(&:chomp)
+    end
+
     def output_from(*args)
       r,w = IO.pipe
-      system cmd_from(*args), out: w
+      system system_env_vars, cmd_from(*args), out: w
       w.close
       r.read.tap{|output| r.close }
     end
@@ -58,7 +78,7 @@ class HeroHelper
       end
 
       def run
-        system(cmd,
+        system(HeroHelper.system_env_vars, cmd,
           {}.tap{|opts|
             opts.merge!(in: reader) if reader
             opts.merge!(out: writer) if writer
@@ -88,7 +108,7 @@ class HeroHelper
 
     def mkdirs(dir_only)
       return false if File.exist?(dir_only)
-      system cmd_from('mkdir', '-pv', dir_only)
+      system system_env_vars, cmd_from('mkdir', '-pv', dir_only)
     end
 
     def editor
