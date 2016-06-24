@@ -15,7 +15,7 @@ class TmuxSubcommand
     else
       lines = `man tmux | plain`.lines.map(&:chomp)
       puts args.map{|arg|
-        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}\s+)/] }.join("\n")
+        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}(\s+|#{arg}))/] }.join("\n")
       }.join("\n---\n")
     end
   }
