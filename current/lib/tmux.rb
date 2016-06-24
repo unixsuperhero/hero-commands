@@ -62,11 +62,8 @@ class Tmux
         end
       else
         if ENV.has_key?('TMUX')
-          env_tmux_before = ENV['TMUX']
           puts 'new detached session: %s => %s' % [name,path]
           new_detached_session(name, path)
-          env_tmux_after_new_session = ENV['TMUX']
-          ap(tmux: env_tmux_before, diff_after_new_session: env_tmux_before == env_tmux_after_new_session)
           puts 'switching to session: %s' % [name]
           switch_session(name)
         else
