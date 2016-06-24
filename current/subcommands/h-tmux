@@ -13,8 +13,7 @@ class TmuxSubcommand
     if args.empty?
       HeroHelper.exec_from('man', 'tmux')
     else
-      lines = HeroHelper.output_lines_from('man tmux', 'plain')
-      binding.pry
+      lines = `man tmux | plain`.lines.map(&:chomp)
       puts lines.first(10)
     end
   }
