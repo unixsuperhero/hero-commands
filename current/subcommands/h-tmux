@@ -6,6 +6,10 @@ class TmuxSubcommand
     Tmux.sessions
   }
 
+  dynamic_subcommand{
+    HeroHelper.exec_from(*args.unshift(subcommand).unshift('tmux'))
+  }
+
   register_subcommand(:man) {
     if args.empty?
       HeroHelper.exec_from('man', 'tmux')
