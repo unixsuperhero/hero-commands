@@ -40,7 +40,7 @@ class Value
     respond_to?(k)
   end
 
-  def method_missing(name, args)
+  def method_missing(name, *args)
     ap(inside: :method_missing, name: name, args: args)
   end
 
