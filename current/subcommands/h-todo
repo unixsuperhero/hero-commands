@@ -1,14 +1,12 @@
 #!/usr/bin/env ruby
 
-
-
 class TodoSubcommand
   include ShellCommandable
 
-  let(:todo_file) { File.join(Dir.home, 'todo.md') }
-  let(:arg_matching_project) {
-    project_name = ProjectHelper.project_matcher.match_name(args.first)
-  }
+  let(:project) { ProjectHelper.project_for(args.first) if args.any?  }
+  let(:project_dir) { project.nil? ? Dir.home : project.dir }
+
+  let(:todo_file) { File.join(project_dir, 'todo.md') }
 
   register_subcommand(:list) {
     cmd = HeroHelper.cmd_from('less', todo_file)
