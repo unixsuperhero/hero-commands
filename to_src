@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git status -s | grep 'current/' | sed 's/^...//;s/.* -> //' | sed -E 's@current/(.*)$@vim -d & src/\1.erb@' | vim -
+
