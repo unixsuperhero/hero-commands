@@ -1,0 +1,30 @@
+class RubyTestSubcommand
+  include ShellCommandable
+
+  let(:experiment_dir) { File.join(Dir.home, 'experiments', 'ruby') }
+
+  register_subcommand(:new) {
+    HeroHelper.run_inside_dir(experiment_dir) {
+      if args.any?
+        HeroHelper.edit_in_editor(*args)
+      else
+        filename = format('spikes/spike.%s.rb', Time.now.strftime('%Y%m%d%H%M%S'))
+        HeroHelper.edit_in_editor(filename)
+      end
+    }
+  }
+end
+
+class RubySubcommand
+  include ShellCommandable
+
+  register_subcommand(:experiment) {
+    RubyTestSubcommand.run(args)
+  }
+end
+
+MainCommand.register_subcommand(:ruby) {
+  RubySubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby
