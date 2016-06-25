@@ -18,6 +18,11 @@ class Value
   end
   alias_method :update, :merge
 
+  def delete(k)
+    @to_h.delete(k)
+    undef k if respond_to?(k)
+  end
+
   def set(k, v)
     merge(k => v)
   end
