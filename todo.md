@@ -4,6 +4,8 @@
 - tip subcommand
   - later:
     - tags
+- h todo (`src/subcommands/h-todo.erb`)
+  - 
 - add generic helpers like a google subcommand: `h google ruby hash fetch method`
 - maybe add `@` modifiers
   - instead of chaining subcommands, maybe accept specific options that begin
