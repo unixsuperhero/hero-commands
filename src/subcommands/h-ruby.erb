@@ -18,7 +18,7 @@ class RubyTestSubcommand
   }
 
   register_subcommand(:list) {
-    HeroHelper.output_lines_for('find', experiment_dir, '-type', 'f').map{|l|
+    HeroHelper.output_lines_from('find', experiment_dir, '-type', 'f').map{|l|
       l.sub(%r{^#{experiment_dir}/*}i, '')
     }.tap(&method(:puts))
   }
