@@ -4,8 +4,10 @@
 - tip subcommand
   - later:
     - tags
-- h todo (`src/subcommands/h-todo.erb`)
-  - 
+- h tip (`src/subcommands/h-tip.erb`)
+  - use small padded numbers as IDs for tips like 001, 002...when a new
+    placevalue is added because the number of tips, just rename all the files
+    using the new padding and rebuild the tips dir
 - add generic helpers like a google subcommand: `h google ruby hash fetch method`
 - maybe add `@` modifiers
   - instead of chaining subcommands, maybe accept specific options that begin
