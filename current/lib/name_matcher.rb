@@ -21,7 +21,7 @@ class Value
 
   def delete(k)
     @to_h.delete(k)
-    undef k if respond_to?(k)
+    instance_eval(format("undef %s", k)) if respond_to?(k)
   end
 
   def set(k, v)
