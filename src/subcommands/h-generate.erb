@@ -6,6 +6,7 @@ class GenerateSubcommand
     <<-"TEMPLATE"
 class %<classified>sSubcommand
   include ShellCommandable
+
   %<registered_subcommands>s
 end
 
@@ -19,9 +20,9 @@ MainCommand.register_subcommand(:%<underscored>s) {
 
   let(:subcmd_template) {
     <<-"TEMPLATE"
-  register_subcommand(:%<subcmd_name>s) do
+  register_subcommand(:%<subcmd_name>s){
     # ... put code here ...
-  end
+  }
     TEMPLATE
   }
 
