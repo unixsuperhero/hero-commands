@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+require 'pry'
+require "./current/lib/clipboard"
+require "./current/lib/config"
+require "./current/lib/dependency_checker"
+require "./current/lib/dot_hash"
+require "./current/lib/fuzzy_finder"
+require "./current/lib/git"
+require "./current/lib/h-project-path-env"
+require "./current/lib/h_project_config"
+require "./current/lib/hash_ext"
+require "./current/lib/hero_helper"
+require "./current/lib/heroku"
+require "./current/lib/let_helpers"
+require "./current/lib/list_filter"
+require "./current/lib/name_matcher"
+require "./current/lib/path_env"
+require "./current/lib/project_helper"
+require "./current/lib/shell_commandable"
+require "./current/lib/subcommandable"
+require "./current/lib/tmux"
+require "./current/lib/value"
+
+binding.pry
+
+puts
+puts 'done'
+puts
+
