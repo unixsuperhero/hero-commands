@@ -1039,7 +1039,8 @@ class MainCommand
 end
 
 MainCommand.load_subcommands_by_prefix('h')
-MainCommand.run
+
+MainCommand.run unless ENV.has_key?('H_SKIP_RUN')
 
 
 

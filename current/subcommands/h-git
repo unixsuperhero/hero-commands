@@ -167,6 +167,10 @@ class GitSubcommand
     }
   }
 
+  dynamic_subcommand {
+    HeroHelper.output_from('git', subcommand, *args)
+  }
+
   register_subcommand(:current_branch){
     puts format("current branch: %s", Git.current_branch)
   }
