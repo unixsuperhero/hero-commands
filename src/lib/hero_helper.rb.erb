@@ -47,6 +47,7 @@ class HeroHelper
 
       parts.shelljoin
     end
+    alias_method :cmd_for, :cmd_from
 
     def system_env_vars
       { 'MANPAGER' => 'cat' }
@@ -55,10 +56,12 @@ class HeroHelper
     def system_from(*args)
       system system_env_vars, cmd_from(*args)
     end
+    alias_method :system_for, :system_from
 
     def exec_from(*args)
       exec cmd_from(*args)
     end
+    alias_method :exec_for, :exec_from
 
     def plainify(str_or_lines)
       if str_or_lines.is_a?(Array)
@@ -71,10 +74,12 @@ class HeroHelper
     def plain_from(*args)
       (output_from(*args) || '').gsub(/\e\S(\d+;)*\d*[mG]|.\b/, '')
     end
+    alias_method :plain_for, :plain_from
 
     def plain_lines_from(*args)
       plain_from(*args).lines.map(&:chomp)
     end
+    alias_method :plain_lines_for, :plain_lines_from
 
     def output_from(*args)
       r,w = IO.pipe
@@ -82,10 +87,12 @@ class HeroHelper
       w.close
       r.read.tap{|output| r.close }
     end
+    alias_method :output_for, :output_from
 
     def output_lines_from(*args)
       output_from(*args).lines.map(&:chomp)
     end
+    alias_method :output_lines_for, :output_lines_from
 
     class PipeCommand
       attr_accessor :cmd, :reader, :writer
