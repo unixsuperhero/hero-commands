@@ -11,6 +11,9 @@
   - before advertising, there are a few things that should probably happen:
     - make a nice readme
     - remove poorly thought-out subcommands/files
+    - move everything out of the home directory and into like `$HOME/h/` or
+      `$HOME/hero/`
+      - add a `~/.hrc` or `~/.herorc` that lets the user customize the root dir
 
 - test:
   - make a class that extends from Value and see if the children it makes will
