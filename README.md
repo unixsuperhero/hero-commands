@@ -1,10 +1,39 @@
 
 # Hero Command and Subcommands
 
-Create a namespace for all the scripts I write.  The scripts include a wide
-variety of helpers.  Helpers for git, ripping media from sites, development,
-note-taking, etc.
+A command-line tool with a simple/standardized way of adding new subcommands.  I
+started making all of my command-line tools subcommands for Hero for a few
+reasons:
 
+1. so they are grouped together
+2. so that it doesn't clutter the global namespace or name-clash with any other
+   unix commands
+
+## Making new subcommands
+
+The ShellCommandable module adds a DSL with methods that make it _really_ easy
+to add subcommands:
+
+```
+# new script that uses ShellCommandable
+# file: example
+#!/usr/bin/env ruby
+
+require './lib/shell_commandable'
+
+class MainCommand
+  include ShellCommandable
+
+  register_subcommand(:ls) {
+    system('ls -l')
+  }
+end
+
+MainCommand.run
+
+# command-line
+# $> example ls
+```
 
 ## About
 
