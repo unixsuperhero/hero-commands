@@ -11,9 +11,11 @@ class Value
   end
 
   def merge(hash)
-    @to_h.merge!(hash)
-    hash.each{|k,v|
-      define_singleton_method(k){ v }
+    self.tap{|this|
+      @to_h.merge!(hash)
+      hash.each{|k,v|
+        define_singleton_method(k){ v }
+      }
     }
   end
   alias_method :update, :merge
@@ -28,6 +30,17 @@ class Value
 
   def has?(k)
     respond_to?(k)
+  end
+
+  def [](key)
+    get(key)
+  end
+
+  def []=(key,val)
+    val.tap{
+      @to_h.merge! key => val
+      define_singleton_method(key){ val }
+    }
   end
 end
 
