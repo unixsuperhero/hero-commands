@@ -43,8 +43,12 @@ class ProjectHelper
       project_matcher.match(partial).is_a?(Value)
     end
 
-    def projects
+    def project_names
       config.data.keys
+    end
+
+    def projects
+      config.data
     end
 
     def dir_for(project_partial)
