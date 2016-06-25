@@ -4,6 +4,7 @@
 - tip subcommand
   - later:
     - tags
+- add generic helpers like a google subcommand: `h google ruby hash fetch method`
 - maybe add `@` modifiers
   - instead of chaining subcommands, maybe accept specific options that begin
     with `@` at the end of the args list...they can be used to support this
