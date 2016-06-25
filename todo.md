@@ -4,6 +4,11 @@
 - tip subcommand
   - later:
     - tags
+- Value class can delete keys/methods
+  - either have the class overload the method to just return nil
+  - or find the proper way to undef a method (i think it is undef)
+- Value class, `method_missing` tries to pass the method onto `@to_h` if it
+  `respond_to?` the missing method
 - add options hash to `::register_subcommand`
   - accept an :abbreviation key which will let the subcommand be matched against
     even if that abbreviation isn't uniq in terms of partial subcommand names
