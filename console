@@ -23,6 +23,8 @@ require "./current/lib/subcommandable"
 require "./current/lib/tmux"
 require "./current/lib/value"
 
+ENV['H_SKIP_RUN'] = 'true'
+
 binding.pry
 
 puts
