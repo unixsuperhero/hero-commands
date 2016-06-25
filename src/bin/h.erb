@@ -58,6 +58,14 @@ class MainCommand
     HeroHelper.edit_in_editor(files)
   }
 
+  register_subcommand(:google) {
+    puts; puts; puts "might have to require uri"; puts; puts
+    query = args.join(" ")
+    encoded_query = URI.encode(query)
+    url = format('http://google.com/search?q=%s', encoded_query)
+    HeroHelper.exec_from('open', url)
+  }
+
   register_subcommand(:pry) {
     puts 'Entering a pry session...'
     binding.pry
