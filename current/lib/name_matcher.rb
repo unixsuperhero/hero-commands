@@ -20,9 +20,12 @@ class Value
   alias_method :update, :merge
 
   def delete(k)
-    @to_h.delete(k)
-    instance_eval(format("undef %s", k)) if respond_to?(k)
+    self.tap{|this|
+      @to_h.delete(k)
+      instance_eval(format("undef %s", k)) if respond_to?(k)
+    }
   end
+  alias_method :unset, :delete
 
   def set(k, v)
     merge(k => v)
@@ -34,6 +37,10 @@ class Value
 
   def has?(k)
     respond_to?(k)
+  end
+
+  def method_missing(name, args)
+    ap(inside: :method_missing, name: name, args: args)
   end
 
   def [](key)
