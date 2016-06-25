@@ -11,13 +11,15 @@ class TipSubcommand
   let(:next_file) { format(filename_format, next_number) }
 
   register_subcommand(:numbers) {
-    30.times do
-      ap(next_number: next_number,
-         padding_size: padding_size,
-         filename_format: filename_format,
-         next_file: next_file)
-      IO.write(next_file, '')
-    end
+    HeroHelper.run_inside_dir(originals_dir) {
+      30.times do
+        ap(next_number: next_number,
+           padding_size: padding_size,
+           filename_format: filename_format,
+           next_file: next_file)
+        IO.write(next_file, '')
+      end
+    }
   }
 
   register_subcommand(:new){
