@@ -1005,7 +1005,6 @@ class MainCommand
   }
 
   register_subcommand(:google) {
-    puts; puts; puts "might have to require uri"; puts; puts
     query = args.join(" ")
     encoded_query = URI.encode(query)
     url = format('http://google.com/search?q=%s', encoded_query)
