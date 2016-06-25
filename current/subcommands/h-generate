@@ -8,7 +8,7 @@ class %<classified>sSubcommand
   include ShellCommandable
 
   # let(:numbers) { [1,2,3,4,5] }
-  # let(:words) { %w[ one two three four five ] }
+  # let(:words) { %%w[ one two three four five ] }
   #
   # register_subcommand(:number_words){
   #   number_word_hash = numbers.zip(words).to_h
