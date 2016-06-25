@@ -24,7 +24,9 @@ class MainCommand
 
   def self.run(args=argv)
     if args.first && args.first[0] == ?@
-      @project_context = ProjectHelper.project_for(args.first)
+      @project_context = ProjectHelper.project_for(args.first).tap{|project_data|
+        project_data.merge(dir: project_data.data) unless project_data.nil?
+      }
       args.shift
     end
 
@@ -41,7 +43,7 @@ class MainCommand
 
   def self.project_dir
     return unless project_context?
-    project_context[:data]
+    project_context.data
   end
 
   def self.project_context
