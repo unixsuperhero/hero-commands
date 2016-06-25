@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pry'
+require 'awesome_print'
 require "./current/lib/clipboard"
 require "./current/lib/config"
 require "./current/lib/dependency_checker"
