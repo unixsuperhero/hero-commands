@@ -6,7 +6,8 @@ class RubyTestSubcommand
   register_subcommand(:new) {
     HeroHelper.run_inside_dir(experiment_dir) {
       if args.any?
-        HeroHelper.edit_in_editor(*args)
+        filenames = args.map{|a| a.sub(/(\.rb)?$/, '.rb') }
+        HeroHelper.edit_in_editor(*filenames)
       else
         filename = format('spikes/spike.%s.rb', Time.now.strftime('%Y%m%d%H%M%S'))
         HeroHelper.edit_in_editor(filename)
