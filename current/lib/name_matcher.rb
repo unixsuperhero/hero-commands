@@ -40,7 +40,11 @@ class Value
   end
 
   def method_missing(name, *args)
-    ap(inside: :method_missing, name: name, args: args)
+    if @to_h.respond_to?(name)
+      @to_h.send(name, *args)
+    else
+      super
+    end
   end
 
   def [](key)
