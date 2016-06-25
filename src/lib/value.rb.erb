@@ -39,11 +39,9 @@ class Value
   end
 
   def method_missing(name, *args)
-    if @to_h.respond_to?(name)
-      @to_h.send(name, *args)
-    else
-      super
-    end
+    super unless @to_h.respond_to?(name)
+
+    @to_h.send(name, *args)
   end
 
   def [](key)
