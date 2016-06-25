@@ -33,7 +33,7 @@ class ProjectSubcommand
   }
 
   register_subcommand(:dirty) {
-    Projecthelper.projects.select{|list,(name,dir)|
+    ProjectHelper.projects.select{|list,(name,dir)|
       next unless File.directory?(dir)
       HeroHelper.run_inside_dir(dir) {
         files = HeroHelper.output_lines_from('git status -s')
