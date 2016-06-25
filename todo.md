@@ -10,6 +10,7 @@
 - start considering ways and when to start telling people about this project
   - before advertising, there are a few things that should probably happen:
     - make a nice readme
+    - remove poorly thought-out subcommands/files
 
 - test:
   - make a class that extends from Value and see if the children it makes will
