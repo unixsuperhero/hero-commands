@@ -7,6 +7,27 @@ class GenerateSubcommand
 class %<classified>sSubcommand
   include ShellCommandable
 
+  # let(:numbers) { [1,2,3,4,5] }
+  # let(:words) { %w[ one two three four five ] }
+  #
+  # register_subcommand(:number_words){
+  #   number_word_hash = numbers.zip(words).to_h
+  #   number_word_hash.each do |num,wrd|
+  #     printf " %d => %s\n", num, wrd
+  #   end
+  # }
+  #
+  # output:
+  #  1 => one
+  #  2 => two
+  #  ...etc...
+
+  # no_subcommand{
+  # }
+
+  # dynamic_subcommand{
+  # }
+
   %<registered_subcommands>s
 end
 
@@ -50,6 +71,8 @@ MainCommand.register_subcommand(:%<underscored>s) {
       outfile: outfile,
       bytes_written: bytes_written,
       vals: vals
+
+    HeroHelper.edit_in_editor(outfile)
   end
 
   register_subcommand(:bin) do
