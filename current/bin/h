@@ -369,6 +369,19 @@ module ShellCommandable
       @after_hook.call if @after_hook
     end
 
+    def current_project
+      @current_project ||=
+        pwd = Dir.pwd
+        possible_projects = ProjectHelper.projects.select{|name,dir|
+          pwd.start_with?(dir)
+        }
+
+        return if possible_projects.empty?
+        name,dir = possible_projects.max_by{|name,dir| dir.length }
+        ProjectHelper.project_for(name)
+      end
+    end
+
     def run(args=ARGV.clone)
       @args = args
       @subcommand = args.shift

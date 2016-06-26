@@ -1,6 +1,11 @@
 class TestSubcommand
   include ShellCommandable
 
+  register_subcommand(:current_project) {
+    ap(current_project: current_project)
+    current_project
+  }
+
   register_subcommand(:chain) {
     ap(inside: 'chain subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
     exit 1 if subcommand == 'four'
