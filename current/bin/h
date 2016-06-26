@@ -356,10 +356,6 @@ module ShellCommandable
           hooks_returned = run_with_hooks{
             block_returned = @no_subcommand.call
           }
-          ap(
-            hooks_returned: hooks_returned,
-            block_returned: block_returned,
-          )
           return block_returned
         else
           print_subcommand_list
@@ -378,10 +374,6 @@ module ShellCommandable
         hooks_returned = run_with_hooks{
           block_returned = @runner.data.call
         }
-        ap(
-          hooks_returned: hooks_returned,
-          block_returned: block_returned,
-        )
         return block_returned
 
         # TODO: figure out how to pass specific args to a subcmd in the middle
@@ -413,10 +405,6 @@ module ShellCommandable
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
         }
-        ap(
-          hooks_returned: hooks_returned,
-          block_returned: block_returned,
-        )
         return block_returned
       end
 
@@ -1015,20 +1003,12 @@ class MainCommand
 
     modified_with_special = special_modifier_args.keys.map{|arg|
       index = args.index(arg)
-      ap(arg: arg, index: index)
       next if index.nil?
       left = args[0..(index - 1)]
       right = args[(index + 1)..-1]
-      ap(arg: arg,
-         args_before: args,
-         left: left,
-         right: right)
       args = left
-      ap(args_after: args)
       [arg, right]
     }.compact.to_h
-
-    ap(modded_with_special: modified_with_special)
 
     modified_with = args.reverse.take_while{|arg|
       modifier_args.keys.include?(arg)
@@ -1038,9 +1018,7 @@ class MainCommand
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
         returned = super
-        ap(returned: returned)
         modified_with_special.each{|arg,cmd|
-          ap(inside: 'special modifier handler - WITH project context', arg: arg, cmd: cmd)
           special_modifier_args[arg].call(returned, cmd)
         }
 
@@ -1050,9 +1028,7 @@ class MainCommand
       }
     else
       returned = super
-      ap(returned: returned)
       modified_with_special.each{|arg,cmd|
-        ap(inside: 'special modifier handler - no project context', arg: arg, cmd: cmd)
         special_modifier_args[arg].call(returned, cmd)
       }
 
@@ -1116,7 +1092,6 @@ class MainCommand
           cmd = cmd.flatten
         end
 
-        ap(current_command: cmd)
         system(*cmd)
       },
     }
