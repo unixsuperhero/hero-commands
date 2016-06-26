@@ -346,49 +346,14 @@ module ShellCommandable
       define_singleton_method(name, &block)
     end
 
-    def modifier_args
-      {
-        '@vim' => Proc.new{|returned|
-          HeroHelper.edit_in_editor *returned.flatten
-        },
-        '@capture' => Proc.new{|returned|
-          tempfile = Tempfile.create('hero')
-
-          case returned
-          when String
-            IO.write(tempfile.path, returned)
-            HeroHelper.edit_in_editor(tempfile.path)
-          when Array
-            IO.write(tempfile.path, returned.join("\n"))
-            HeroHelper.edit_in_editor(tempfile.path)
-          else
-            puts format('Not sure how to capture a %s...', returned.class)
-          end
-
-          tempfile.delete
-          tempfile.close
-        }
-      }
-    end
-
     def run(args=ARGV.clone)
       @args = args
       @subcommand = args.shift
 
-      modified_with = args.reverse.take_while{|arg|
-        modifier_args.keys.include?(arg)
-      }
-      modified_with.length.times{ args.pop }
-
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
-          run_with_hooks{
-            returned = @no_subcommand.call
-            if modified_with.any?
-              modified_with.each do |arg|
-                modifier_args[arg].call(returned)
-              end
-            end
+          return run_with_hooks{
+            @no_subcommand.call
           }
           exit 0
         else
@@ -404,14 +369,8 @@ module ShellCommandable
       @runner = subcommand_matcher.match(@subcommand)
 
       if @runner
-        command_output = nil
-        run_with_hooks{
-          command_output = @runner.data.call
-          if modified_with.any?
-            modified_with.each do |arg|
-              modifier_args[arg].call(command_output)
-            end
-          end
+        return run_with_hooks{
+          @runner.data.call
         }
 
         # TODO: figure out how to pass specific args to a subcmd in the middle
@@ -439,13 +398,8 @@ module ShellCommandable
       end
 
       if @dynamic_subcommand
-        run_with_hooks{
-          returned = @dynamic_subcommand.call
-          if modified_with.any?
-            modified_with.each do |arg|
-              modifier_args[arg].call(returned)
-            end
-          end
+        return run_with_hooks{
+          @dynamic_subcommand.call
         }
         exit 0
       end
@@ -1043,11 +997,49 @@ class MainCommand
       args.shift
     end
 
+    modified_with = args.reverse.take_while{|arg|
+      modifier_args.keys.include?(arg)
+    }
+    modified_with.length.times{ args.pop }
+
     if project_context?
-      HeroHelper.run_inside_dir(project_dir){ super }
+      HeroHelper.run_inside_dir(project_dir){
+        returned = super
+        modified_with.each{|arg|
+          modifier_args[arg].call(returned)
+        }
+      }
     else
-      super
+      returned = super
+      modified_with.each{|arg|
+        modifier_args[arg].call(returned)
+      }
     end
+  end
+
+  def self.modifier_args
+    {
+      '@vim' => Proc.new{|returned|
+        HeroHelper.edit_in_editor *returned.flatten
+      },
+      '@capture' => Proc.new{|returned|
+        tempfile = Tempfile.create('hero')
+
+        case returned
+        when String
+          IO.write(tempfile.path, returned)
+          HeroHelper.edit_in_editor(tempfile.path)
+        when Array
+          IO.write(tempfile.path, returned.join("\n"))
+          HeroHelper.edit_in_editor(tempfile.path)
+        else
+          puts format('Not sure how to capture a %s...', returned.class)
+        end
+
+        tempfile.delete
+        tempfile.close
+      }
+    }
   end
 
   def self.project_context?
