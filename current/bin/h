@@ -352,10 +352,15 @@ module ShellCommandable
 
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
-          return run_with_hooks{
-            @no_subcommand.call
+          block_returned = nil
+          hooks_returned = run_with_hooks{
+            block_returned = @no_subcommand.call
           }
-          exit 0
+          ap(
+            hooks_returned: hooks_returned,
+            block_returned: block_returned,
+          )
+          return hooks_returned
         else
           print_subcommand_list
           exit 1
@@ -369,9 +374,15 @@ module ShellCommandable
       @runner = subcommand_matcher.match(@subcommand)
 
       if @runner
-        return run_with_hooks{
-          @runner.data.call
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @runner.data.call
         }
+        ap(
+          hooks_returned: hooks_returned,
+          block_returned: block_returned,
+        )
+        return hooks_returned
 
         # TODO: figure out how to pass specific args to a subcmd in the middle
         #       of the chain...we could do something like subcmdname:value
@@ -398,10 +409,15 @@ module ShellCommandable
       end
 
       if @dynamic_subcommand
-        return run_with_hooks{
-          @dynamic_subcommand.call
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @dynamic_subcommand.call
         }
-        exit 0
+        ap(
+          hooks_returned: hooks_returned,
+          block_returned: block_returned,
+        )
+        return hooks_returned
       end
 
       puts format('Runner/handler not found for the "%s" subcommand', subcommand)
