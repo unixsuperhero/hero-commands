@@ -6,6 +6,11 @@ class Value
     @to_h = hash
     hash.each{|k,v|
       define_singleton_method(k){ v }
+
+      set_method = k.to_s + ?=
+      define_singleton_method(set_method){|new_v|
+        define_singleton_method(k){ new_v }
+      }
     }
   end
 
@@ -14,6 +19,11 @@ class Value
       @to_h.merge!(hash)
       hash.each{|k,v|
         define_singleton_method(k){ v }
+
+        set_method = k.to_s + ?=
+        define_singleton_method(set_method){|new_v|
+          define_singleton_method(k){ new_v }
+        }
       }
     }
   end
@@ -23,6 +33,7 @@ class Value
     self.tap{|this|
       @to_h.delete(k)
       instance_eval(format("undef %s", k)) if respond_to?(k)
+      instance_eval(format("undef %s=", k)) if respond_to?(k.to_s + ?=)
     }
   end
   alias_method :unset, :delete
