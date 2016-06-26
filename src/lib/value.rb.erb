@@ -2,15 +2,8 @@ class Value
   attr_reader :to_h
 
   def initialize(hash)
-    @to_h = hash
-    hash.each{|k,v|
-      define_singleton_method(k){ v }
-
-      set_method = k.to_s + ?=
-      define_singleton_method(set_method){|new_v|
-        define_singleton_method(k){ new_v }
-      }
-    }
+    @to_h = {}
+    merge(hash)
   end
 
   def merge(hash)
@@ -21,6 +14,7 @@ class Value
 
         set_method = k.to_s + ?=
         define_singleton_method(set_method){|new_v|
+          @to_h.merge!(k => new_v)
           define_singleton_method(k){ new_v }
         }
       }
