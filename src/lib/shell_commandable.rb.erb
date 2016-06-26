@@ -21,10 +21,6 @@ module ShellCommandable
           hooks_returned = run_with_hooks{
             block_returned = @no_subcommand.call
           }
-          ap(
-            hooks_returned: hooks_returned,
-            block_returned: block_returned,
-          )
           return block_returned
         else
           print_subcommand_list
@@ -43,10 +39,6 @@ module ShellCommandable
         hooks_returned = run_with_hooks{
           block_returned = @runner.data.call
         }
-        ap(
-          hooks_returned: hooks_returned,
-          block_returned: block_returned,
-        )
         return block_returned
 
         # TODO: figure out how to pass specific args to a subcmd in the middle
@@ -78,10 +70,6 @@ module ShellCommandable
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
         }
-        ap(
-          hooks_returned: hooks_returned,
-          block_returned: block_returned,
-        )
         return block_returned
       end
 
