@@ -25,7 +25,7 @@ module ShellCommandable
             hooks_returned: hooks_returned,
             block_returned: block_returned,
           )
-          return hooks_returned
+          return block_returned
         else
           print_subcommand_list
           exit 1
@@ -47,7 +47,7 @@ module ShellCommandable
           hooks_returned: hooks_returned,
           block_returned: block_returned,
         )
-        return hooks_returned
+        return block_returned
 
         # TODO: figure out how to pass specific args to a subcmd in the middle
         #       of the chain...we could do something like subcmdname:value
@@ -82,7 +82,7 @@ module ShellCommandable
           hooks_returned: hooks_returned,
           block_returned: block_returned,
         )
-        return hooks_returned
+        return block_returned
       end
 
       puts format('Runner/handler not found for the "%s" subcommand', subcommand)
