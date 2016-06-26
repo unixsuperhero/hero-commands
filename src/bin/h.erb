@@ -43,6 +43,8 @@ class MainCommand
       [arg, right]
     }.compact.to_h
 
+    ap(modded_with_special: modified_with_special)
+
     modified_with = args.reverse.take_while{|arg|
       modifier_args.keys.include?(arg)
     }
