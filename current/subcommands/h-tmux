@@ -6,6 +6,10 @@ class TmuxSubcommand
     HeroHelper.exec_from(*args.unshift(subcommand).unshift('tmux'))
   }
 
+  register_subcommand(:pry) {
+    exec('tmux', 'splitw', '-p', '25', 'pry', '-rawesome_print', '-ryaml', '-rjson')
+  }
+
   register_subcommand(:sessions, :ls) {
     Tmux.sessions(*args).tap{|matching_sessions|
       error_exit('No matching tmux sessions...') if matching_sessions.empty?
