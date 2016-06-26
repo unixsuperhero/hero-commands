@@ -1107,9 +1107,15 @@ class MainCommand
           cmd.push '%s'
         end
         gsub = %r{(?<!\\)%s}i
-        cmd = cmd.map{|arg| arg.gsub(gsub, '%<list>s') }
-        current_command = cmd.map{|item| format(item, list: returned.map(&:shellescape).join(' ')) }
-        system(*current_command)
+
+        to_add = returned.map(&:shellescape)
+        while cmdi = cmd.index('%s')
+          cmd[cmdi] = to_add
+          cmd = cmd.flatten
+        end
+
+        ap(current_command: cmd)
+        system(*cmd)
       },
     }
   end
