@@ -36,12 +36,14 @@ class MainCommand
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
         returned = super
+        ap(returned: returned)
         modified_with.each{|arg|
           modifier_args[arg].call(returned)
         }
       }
     else
       returned = super
+      ap(returned: returned)
       modified_with.each{|arg|
         modifier_args[arg].call(returned)
       }
