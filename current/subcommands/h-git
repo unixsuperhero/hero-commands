@@ -229,16 +229,12 @@ class GitSubcommand
     else
       HeroHelper.system_from('git', 'commit', '-m', args.join(' '))
     end
-
-    exit 0
   }
 
   register_subcommand(:add){
     args.push(?.) if args.empty?
 
     HeroHelper.system_from('git', 'add', *args)
-
-    exit 0
   }
 
   register_subcommand(:addall, :aa){
@@ -247,8 +243,6 @@ class GitSubcommand
     else
       HeroHelper.system_from('git', 'add', '--all', *args)
     end
-
-    exit 0
   }
 
   register_subcommand(:vsfiles){
@@ -297,8 +291,9 @@ class GitSubcommand
 
     exit 1 if statuses.empty?
 
-    puts statuses
-    exit 0
+    statuses.tap{|gst|
+      puts gst
+    }
   }
 
   register_subcommand(:status){
