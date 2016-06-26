@@ -1075,7 +1075,9 @@ class MainCommand
           IO.write(tempfile.path, returned)
           HeroHelper.edit_in_editor(tempfile.path)
         when Array
-          IO.write(tempfile.path, returned.join("\n"))
+          File.open(tempfile.path, 'w+') {|fd|
+            fd.puts returned
+          }
           HeroHelper.edit_in_editor(tempfile.path)
         else
           puts format('Not sure how to capture a %s...', returned.class)
