@@ -28,11 +28,49 @@ class MainCommand
       args.shift
     end
 
+    modified_with = args.reverse.take_while{|arg|
+      modifier_args.keys.include?(arg)
+    }
+    modified_with.length.times{ args.pop }
+
     if project_context?
-      HeroHelper.run_inside_dir(project_dir){ super }
+      HeroHelper.run_inside_dir(project_dir){
+        returned = super
+        modified_with.each{|arg|
+          modifier_args[arg].call(returned)
+        }
+      }
     else
-      super
+      returned = super
+      modified_with.each{|arg|
+        modifier_args[arg].call(returned)
+      }
     end
+  end
+
+  def self.modifier_args
+    {
+      '@vim' => Proc.new{|returned|
+        HeroHelper.edit_in_editor *returned.flatten
+      },
+      '@capture' => Proc.new{|returned|
+        tempfile = Tempfile.create('hero')
+
+        case returned
+        when String
+          IO.write(tempfile.path, returned)
+          HeroHelper.edit_in_editor(tempfile.path)
+        when Array
+          IO.write(tempfile.path, returned.join("\n"))
+          HeroHelper.edit_in_editor(tempfile.path)
+        else
+          puts format('Not sure how to capture a %s...', returned.class)
+        end
+
+        tempfile.delete
+        tempfile.close
+      }
+    }
   end
 
   def self.project_context?
