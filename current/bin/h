@@ -1019,20 +1019,32 @@ class MainCommand
       HeroHelper.run_inside_dir(project_dir){
         returned = super
         modified_with_special.each{|arg,cmd|
+          puts
+          puts (header = 'Modified Output')
+          puts ?- * header.length
           special_modifier_args[arg].call(returned, cmd)
         }
 
         modified_with.each{|arg|
+          puts
+          puts (header = 'Modified Output')
+          puts ?- * header.length
           modifier_args[arg].call(returned)
         }
       }
     else
       returned = super
       modified_with_special.each{|arg,cmd|
+        puts
+        puts (header = 'Modified Output')
+        puts ?- * header.length
         special_modifier_args[arg].call(returned, cmd)
       }
 
       modified_with.each{|arg|
+        puts
+        puts (header = 'Modified Output')
+        puts ?- * header.length
         modifier_args[arg].call(returned)
       }
     end
