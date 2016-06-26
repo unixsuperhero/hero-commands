@@ -1040,6 +1040,7 @@ class MainCommand
         returned = super
         ap(returned: returned)
         modified_with_special.each{|arg,cmd|
+          ap(inside: 'special modifier handler - WITH project context', arg: arg, cmd: cmd)
           special_modifier_args[arg].call(returned, cmd)
         }
 
@@ -1050,6 +1051,11 @@ class MainCommand
     else
       returned = super
       ap(returned: returned)
+      modified_with_special.each{|arg,cmd|
+        ap(inside: 'special modifier handler - no project context', arg: arg, cmd: cmd)
+        special_modifier_args[arg].call(returned, cmd)
+      }
+
       modified_with.each{|arg|
         modifier_args[arg].call(returned)
       }
