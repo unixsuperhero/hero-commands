@@ -28,13 +28,19 @@ class MainCommand
       args.shift
     end
 
-    modified_with_special = special_modifier_args.map{|arg|
+    modified_with_special = special_modifier_args.keys.map{|arg|
       index = args.index(/(?<!\\)#{arg}/i)
+      next if index.nil?
       left = args[0..(index - 1)]
       right = args[(index + 1)..-1]
+      ap(arg: arg,
+         args_before: args,
+         left: left,
+         right: right)
       args = left
+      ap(args_after: args)
       [arg, right]
-    }.to_h
+    }.compact.to_h
 
     modified_with = args.reverse.take_while{|arg|
       modifier_args.keys.include?(arg)
