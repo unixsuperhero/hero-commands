@@ -35,7 +35,7 @@ module ShellCommandable
     end
 
     def current_project
-      @current_project ||=
+      @current_project ||= begin
         pwd = Dir.pwd
         possible_projects = ProjectHelper.projects.select{|name,dir|
           pwd.start_with?(dir)
