@@ -1013,6 +1013,14 @@ class MainCommand
       args.shift
     end
 
+    modified_with_special = special_modifier_args.map{|arg|
+      index = args.index(/(?<!\\)#{arg}/i)
+      left = args[0..(index - 1)]
+      right = args[(index + 1)..-1]
+      args = left
+      [arg, right]
+    }.to_h
+
     modified_with = args.reverse.take_while{|arg|
       modifier_args.keys.include?(arg)
     }
@@ -1022,6 +1030,10 @@ class MainCommand
       HeroHelper.run_inside_dir(project_dir){
         returned = super
         ap(returned: returned)
+        modified_with_special.each{|arg,cmd|
+          special_modifier_args[arg].call(returned, cmd)
+        }
+
         modified_with.each{|arg|
           modifier_args[arg].call(returned)
         }
@@ -1057,6 +1069,33 @@ class MainCommand
         tempfile.delete
         tempfile.close
       }
+    }
+  end
+
+  def self.special_modifier_args
+    {
+      '@each' => Proc.new{|returned,cmd|
+        break unless returned.is_a?(Array)
+        if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+          cmd.push '%s'
+        end
+        gsub = %r{(?<!\\)%s}i
+        cmd = cmd.map{|arg| arg.gsub(gsub, '%<arg>s') }
+        returned.map{|arg|
+          current_command = cmd.map{|item| format(item, arg: arg.shellescape) }
+          system(*current_command)
+        }
+      },
+      '@all' => Proc.new{|returned,cmd|
+        break unless returned.is_a?(Array)
+        if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+          cmd.push '%s'
+        end
+        gsub = %r{(?<!\\)%s}i
+        cmd = cmd.map{|arg| arg.gsub(gsub, '%<list>s') }
+        current_command = cmd.map{|item| format(item, list: returned.map(&:shellescape).join(' ')) }
+        system(*current_command)
+      },
     }
   end
 
