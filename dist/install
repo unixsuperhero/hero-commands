@@ -1,0 +1,57 @@
+#!/bin/bash
+
+echo
+echo 'Installing Hero Commands'
+echo
+
+rsync -avz home/ ~/
+
+printf 'Is $HOME/bin in your $PATH...'
+
+if echo "$PATH" | egrep "(:|^)($HOME|\$HOME|~)/bin/*(:|$)" &>/dev/null
+then
+  echo 'yes'
+else
+  echo 'no'
+  echo
+
+  printf 'export PATH="$HOME/bin:$PATH"' | pbcopy
+
+  cat <<"MSG"
+
+  Add the following line to your ~/.bashrc or ~/.zshrc:
+
+    export PATH="$HOME/bin:$PATH"
+
+  (It is already in your clipboard...)
+
+  After it is added, source that file:
+
+    source ~/.bashrc
+
+    # ...or...
+
+    source ~/.zshrc
+
+MSG
+
+fi
+
+echo
+echo '-----'
+echo
+
+cat <<"MSG"
+
+  To see what commands are available to you,
+  run:
+
+    h
+
+MSG
+
+
+echo
+echo '...done.'
+echo
+

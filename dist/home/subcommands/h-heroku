@@ -1,0 +1,11 @@
+# class HerokuSubcommand
+#   include ShellCommandable
+# end
+
+# MainCommand.register_subcommand(:heroku) {
+#   HerokuSubcommand.run(MainCommand.args)
+# }
+
+
+
+# vim: ft=ruby

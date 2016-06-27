@@ -1,0 +1,39 @@
+class RubyTestSubcommand
+  include ShellCommandable
+
+  let(:experiment_dir) { File.join(Dir.home, 'experiments', 'ruby') }
+
+  no_subcommand{
+    HeroHelper.run_inside_dir(experiment_dir) {
+      filename = format('spikes/%s.rb', Time.now.strftime('%Y%m%d%H%M%S'))
+      HeroHelper.edit_in_editor(filename)
+    }
+  }
+
+  dynamic_subcommand{
+    HeroHelper.run_inside_dir(experiment_dir) {
+      filenames = ([subcommand] + args).map{|a| a.sub(/(\.rb)?$/, '.rb') }
+      HeroHelper.edit_in_editor(*filenames)
+    }
+  }
+
+  register_subcommand(:list) {
+    HeroHelper.output_lines_from('find', experiment_dir, '-type', 'f').map{|l|
+      l.sub(%r{^#{experiment_dir}/*}i, '')
+    }.tap(&method(:puts))
+  }
+end
+
+class RubySubcommand
+  include ShellCommandable
+
+  register_subcommand(:test, :spike, :experiment) {
+    RubyTestSubcommand.run(args)
+  }
+end
+
+MainCommand.register_subcommand(:ruby) {
+  RubySubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby

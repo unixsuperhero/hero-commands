@@ -1,0 +1,127 @@
+
+class TmuxSubcommand
+  include ShellCommandable
+
+  dynamic_subcommand{
+    HeroHelper.exec_from(*args.unshift(subcommand).unshift('tmux'))
+  }
+
+  register_subcommand(:pry) {
+    exec('tmux', 'splitw', '-p', '25', 'pry', '-rawesome_print', '-ryaml', '-rjson')
+  }
+
+  register_subcommand(:sessions, :ls) {
+    Tmux.sessions(*args).tap{|matching_sessions|
+      error_exit('No matching tmux sessions...') if matching_sessions.empty?
+
+      puts matching_sessions
+    }
+  }
+
+  register_subcommand(:commands) {
+    # cmds = HeroHelper.output_lines_from(*'tmux list-commands'.shellsplit)
+    # cmds = ListFilter.run(cmds, *args) if args.any?
+    Tmux.commands(*args).tap{|tmux_cmds|
+      if tmux_cmds.empty?
+        puts 'No matching commands...'
+        exit 1
+      end
+
+      ap tmux_cmds
+    }
+  }
+
+  register_subcommand(:keys) {
+    Tmux.keys(*args).tap{|tmux_keys|
+      if tmux_keys.empty?
+        puts 'No matching keys...'
+        exit 1
+      end
+
+      puts tmux_keys
+    }
+  }
+
+  register_subcommand(:windows) {
+    Tmux.windows(*args).tap{|tmux_windows|
+      if tmux_windows.empty?
+        puts 'No matching windows...'
+        exit 1
+      end
+
+      puts tmux_windows
+    }
+  }
+
+  register_subcommand(:panes) {
+    Tmux.panes(*args).tap{|tmux_panes|
+      if tmux_panes.empty?
+        puts 'No matching panes...'
+        exit 1
+      end
+
+      puts tmux_panes
+    }
+  }
+
+  register_subcommand(:buffers) {
+    Tmux.buffers(*args).tap{|tmux_buffers|
+      if tmux_buffers.empty?
+        puts 'No matching buffers...'
+        exit 1
+      end
+
+      puts tmux_buffers
+    }
+  }
+
+  register_subcommand(:clients) {
+    Tmux.clients(*args).tap{|tmux_clients|
+      if tmux_clients.empty?
+        puts 'No matching clients...'
+        exit 1
+      end
+
+      puts tmux_clients
+    }
+  }
+
+  register_subcommand(:join) {
+    error_exit(
+      "A session-name is required for joining tmux session, also a directory is optional..."
+    ) if args.empty?
+
+    name, path = args.first(2)
+    path ||= Dir.pwd
+
+    Tmux.force_session(name, path)
+  }
+
+  register_subcommand(:man) {
+    if args.empty?
+      HeroHelper.exec_from('man', 'tmux')
+    else
+      lines = `man tmux | plain`.lines.map(&:chomp)
+      puts args.map{|arg|
+        lines.drop_while{|l| ! l[/^\s{5}#{arg}/i] }.take_while{|l| l[/^(\s*$|\s{5}(\s+|#{arg}))/] }.join("\n")
+      }.join("\n---\n")
+    end
+  }
+
+  register_subcommand(:split) {
+    error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
+    HeroHelper.exec_from('tmux', 'splitw')
+  }
+
+  register_subcommand(:vsplit) {
+    error_exit('Not inside a tmux session...') if ENV['TMUX'].nil?
+  }
+end
+
+MainCommand.register_subcommand(:tmux) {
+  TmuxSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby

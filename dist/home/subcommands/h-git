@@ -1,0 +1,374 @@
+#!/usr/bin/env ruby
+
+class DotHash
+  class << self
+    def for(file)
+      new(file)
+    end
+  end
+
+  attr_accessor :official_data
+  attr_accessor :mapped_data
+  def initialize(h)
+    @official_data = h.clone
+    @mapped_data = h.clone
+  end
+
+  def [](key)
+    config_data[key]
+  end
+
+  def []=(key, val)
+    config_data[key] = val
+  end
+
+  def save
+    IO.write(filename, YAML.dump(config_data))
+  end
+
+  def file_exists?
+    File.exist?(filename)
+  end
+
+  def write_empty_config_if_file_is_missing
+    return if file_exists?
+    IO.write filename, YAML.dump({})
+  end
+
+  def method_missing(key, *args)
+    base,operator = key.to_s.split(/(?<=\w)(?=\W*$)/i).push('')
+    matchers = 0.upto(operator.length).flat_map{|len|
+      m = base + operator.slice(0,len)
+      [m, m.to_sym]
+    }
+
+    matching_key = config_data.keys.find{|k| matchers.include?(k) }
+
+    # if it's a getter
+    if args.count == 0
+      config_data[matching_key]
+
+    # if it's a setter and the matched and existing key
+    elsif matching_key
+      config_data.merge! matching_key => args.first
+
+    # if it's a setter and it's a new key
+    else
+      config_data[base] = args.first
+    end
+  end
+end
+
+
+class Git
+  class << self
+    def inside_repo?
+      return true if `git rev-parse --is-inside-work-tree`[/true/]
+      return true if `git rev-parse --is-inside-git-dir`[/true/]
+      false
+    end
+
+    def path_to_root
+      return '.' unless inside_repo?
+      `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def absolute_root_path
+      return '.' unless inside_repo?
+      `git rev-parse --show-toplevel`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_root_path
+      return false unless inside_repo?
+      Dir.chdir(path_to_root)
+    end
+
+    def path_to_git_dir
+      return '.' unless inside_repo?
+      `git rev-parse --git-dir`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_git_dir
+      return false unless inside_repo?
+      Dir.chdir(path_to_git_dir)
+    end
+
+    def current_head
+      return false  unless inside_repo?
+      head = `git symbolic-ref HEAD`.lines.first.chomp
+      head.sub(%r{^refs/heads/}, '')
+    end
+
+    def heads_dir
+      File.join(path_to_git_dir, 'refs/heads')
+    end
+
+    def heads
+      pwd = Dir.pwd
+      Dir.chdir heads_dir
+
+      Dir['**/*'].select{|f|
+        File.file?(f)
+      }.tap{
+        Dir.chdir(pwd)
+      }
+    end
+
+    def current_branch
+      puts 'TESTING'
+      `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
+    end
+
+    def status
+      `git status -s`.lines.flat_map{|line|
+        line.chomp.sub(/.../,'').split(/\s+->\s+/)
+      }.uniq
+    end
+
+    def branches
+      `git branch`.lines.flat_map{|line|
+        line.split(/\s+/).select{|b| b[/\w/] }
+      }.uniq
+    end
+
+    def branch_parts(branch=current_branch)
+      parts = branch.split(?/)
+      base = parts.pop
+      prefix = parts.join(?/)
+      DotHash.new({base: base,
+                      has_prefix: parts.count > 0,
+                      prefix: parts.join(?/)})
+    end
+
+    def branch_base
+      branch_parts.base
+    end
+
+    def branch_has_prefix?
+      branch_parts.has_prefix
+    end
+
+    def branch_prefix
+      branch_parts.prefix
+    end
+  end
+end
+
+class GitSubcommand
+  include ShellCommandable
+
+  let(:status_lines) {
+    HeroHelper.output_lines_from("git status -s")
+  }
+
+  let(:status_files) {
+    status_lines.map{|b|
+      b.sub(/^.../, '').sub(/.* -> /, '')
+    }
+  }
+
+  dynamic_subcommand {
+    HeroHelper.output_from('git', subcommand, *args)
+  }
+
+  register_subcommand(:current_branch){
+    puts format("current branch: %s", Git.current_branch)
+  }
+
+  register_subcommand(:prefix){
+    if args.empty?
+      Git.branch_prefix
+      exit 0
+    else
+      exit 1
+
+      # check to see if args.first exists as a prefix for current branch
+      # if it does...checkout the prefix
+      # if it does not...copy and then checkout the prefix
+
+      cmd = "git branch '#{args.first}/#{Git.branch_base}'"
+      puts format('Command: "%s"', cmd)
+      system(cmd)
+    end
+  }
+
+  register_subcommand(:link_branch, :alias, :ln){
+    error_exit('pwd, "%s", is not inside a git repo' % Dir.pwd) unless Git.inside_repo?
+    from,to = args
+
+    error_exit('the new branch name is a required argument') if args.empty?
+
+    if to.nil?
+      to = from
+      from = Git.current_head
+    end
+
+    heads = Git.heads
+
+    if heads.include?(to)
+      puts format('"%<to>s" exists...use symbolic-ref --delete refs/heads/%<to>s', to: to)
+    end
+
+    cmd = format('git symbolic-ref refs/heads/%s refs/heads/%s', to, from)
+    puts format('Command: "%s"', cmd)
+
+    puts format('Command: "%s" => to show new alias was created', 'git branch')
+  }
+
+  register_subcommand(:root_dir) {
+    printf Git.path_to_root
+  }
+
+  register_subcommand(:git_dir) {
+    printf Git.path_to_git_dir
+  }
+
+  register_subcommand(:commit, :cm, :ci){
+    if args.empty?
+      HeroHelper.system_from('git', 'commit', '-m', 'misc. updates')
+    else
+      HeroHelper.system_from('git', 'commit', '-m', args.join(' '))
+    end
+  }
+
+  register_subcommand(:add){
+    args.push(?.) if args.empty?
+
+    HeroHelper.system_from('git', 'add', *args)
+  }
+
+  register_subcommand(:addall, :aa){
+    if args.empty?
+      HeroHelper.system_from('git', 'add', '--all')
+    else
+      HeroHelper.system_from('git', 'add', '--all', *args)
+    end
+  }
+
+  register_subcommand(:vsfiles){
+
+    statuses = status_files
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    if statuses.count < 4
+      HeroHelper.exec_from('vim', '-O', *statuses)
+    else
+      HeroHelper.exec_from('vim', *statuses)
+    end
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:vstatus){
+
+    statuses = status_lines
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    files = statuses.map{|l| l.sub(/^.../,'').sub(/.* -> /, '') }
+
+    if statuses.count < 4
+      HeroHelper.exec_from('vim', '-O', *files)
+    else
+      HeroHelper.exec_from('vim', *files)
+    end
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:sfiles){
+
+    statuses = status_files
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    statuses.tap{|gst|
+      puts gst
+    }
+  }
+
+  register_subcommand(:status){
+
+    statuses = status_lines
+
+    statuses = ListFilter.run(statuses, *args) if args.any?
+
+    exit 1 if statuses.empty?
+
+    puts statuses
+    exit 0
+  }
+
+  register_subcommand(:cbranch, :cobranch){
+
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
+      b.sub(/^../, '').sub(/.* -> /, '')
+    }
+
+    branches = ListFilter.run(branches, *args) if args.any?
+
+    exit 1 if branches.empty?
+
+    if branches.size > 1
+      puts "More than one match found:"
+      puts format('  %s', branches.join("\n  "))
+    else
+      puts format('Checking out: %s', branches.first)
+      HeroHelper.system_from('git', 'checkout', branches.first)
+    end
+
+    puts branches
+    exit 0
+
+    # -------------
+
+    if args.empty?
+      puts branches
+      exit 0
+    end
+
+    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
+    exit 0
+  }
+
+  register_subcommand(:branch){
+
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
+      b.sub(/^../, '').sub(/.* -> /, '')
+    }
+
+    branches = ListFilter.run(branches, *args) if args.any?
+
+    exit 1 if branches.empty?
+
+    puts branches
+    exit 0
+
+    # -------------
+
+    if args.empty?
+      puts branches
+      exit 0
+    end
+
+    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
+    exit 0
+  }
+end
+
+MainCommand.register_subcommand(:git) {
+  GitSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby

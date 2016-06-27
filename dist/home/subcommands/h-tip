@@ -1,0 +1,51 @@
+class TipSubcommand
+  include ShellCommandable
+
+  let(:tips_dir) { File.join(Dir.home, 'tips').tap{|dir| `mkdir -pv #{dir.shellescape}` unless File.directory?(dir) } }
+  let(:originals_dir) { File.join(tips_dir, 'originals').tap{|dir| `mkdir -pv #{dir.shellescape}` unless File.directory?(dir) } }
+  let(:tip_files) { HeroHelper.run_inside_dir(originals_dir){ Dir['[0-9]*.md'] } }
+  let(:tip_numbers) { tip_files.map(&:to_i) }
+  let(:next_number) { tip_numbers.max + 1 }
+  let(:padding_size) { tip_files.map{|fn| fn[/^\d+/] }.max_by(&:length).length }
+  let(:filename_format) { format('%%0%dd.md', padding_size) }
+  let(:next_file) { format(filename_format, next_number) }
+
+  register_subcommand(:numbers) {
+    HeroHelper.run_inside_dir(originals_dir) {
+      30.times do
+        ap(next_number: next_number,
+           padding_size: padding_size,
+           filename_format: filename_format,
+           next_file: next_file)
+        IO.write(next_file, '')
+      end
+    }
+  }
+
+  register_subcommand(:new){
+    date = Time.now.strftime('%Y%m%d')
+    seconds = Time.now.to_i % (60*60*24)
+    HeroHelper.run_inside_dir(originals_dir) {
+      new_file = format('%s.%s.md', date, seconds)
+      while File.exist?(new_file)
+        new_file = format('%s.%s.md', date, seconds += 1)
+      end
+
+      IO.write new_file, ''
+      HeroHelper.edit_in_editor new_file
+    }
+  }
+
+  register_subcommand(:list){
+    HeroHelper.run_inside_dir(originals_dir){
+      puts Dir['**/*.md']
+    }
+  }
+
+end
+
+MainCommand.register_subcommand(:tip) {
+  TipSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby

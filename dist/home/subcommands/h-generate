@@ -1,0 +1,89 @@
+
+class GenerateSubcommand
+  include ShellCommandable
+
+  let(:file_template) {
+    <<-"TEMPLATE"
+class %<classified>sSubcommand
+  include ShellCommandable
+
+  # let(:numbers) { [1,2,3,4,5] }
+  # let(:words) { %%w[ one two three four five ] }
+  #
+  # register_subcommand(:number_words){
+  #   number_word_hash = numbers.zip(words).to_h
+  #   number_word_hash.each do |num,wrd|
+  #     printf " %%d => %%s\n", num, wrd
+  #   end
+  # }
+  #
+  # output:
+  #  1 => one
+  #  2 => two
+  #  ...etc...
+
+  # no_subcommand{
+  # }
+
+  # dynamic_subcommand{
+  # }
+
+  %<registered_subcommands>s
+end
+
+MainCommand.register_subcommand(:%<underscored>s) {
+  %<classified>sSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby
+    TEMPLATE
+  }
+
+  let(:subcmd_template) {
+    <<-"TEMPLATE"
+  register_subcommand(:%<subcmd_name>s){
+    # ... put code here ...
+  }
+    TEMPLATE
+  }
+
+  let(:base_dir) { File.join(Dir.home, 'projects', 'hero-commands') }
+  let(:src_dir) { File.join(base_dir, 'src') }
+  let(:subcommands_dir) { File.join(src_dir, 'subcommands') }
+
+  register_subcommand(:subcommand, :subcmd) do
+    error_exit('A subcommand name is required as an argument...') if args.empty?
+
+    base_name = args.shift
+    args.unshift('example') if args.empty?
+    vals = {
+      classified: HeroHelper.string_to_classname(base_name),
+      underscored: HeroHelper.string_to_underscores(base_name),
+      registered_subcommands: args.map{|name| format(subcmd_template, subcmd_name: name) }.join("\n\n")
+    }
+
+    erb_file = format('h-%s.erb', base_name)
+    outfile = File.join(subcommands_dir, erb_file)
+    bytes_written = IO.write(outfile, format(file_template, vals))
+
+    ap base_name: base_name,
+      erb_file: erb_file,
+      outfile: outfile,
+      bytes_written: bytes_written,
+      vals: vals
+
+    HeroHelper.edit_in_editor(outfile)
+  end
+
+  register_subcommand(:bin) do
+  end
+
+  register_subcommand(:lib) do
+  end
+end
+
+MainCommand.register_subcommand(:generate) {
+  GenerateSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby

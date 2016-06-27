@@ -1,0 +1,36 @@
+class TestSubcommand
+  include ShellCommandable
+
+  register_subcommand(:current_project) {
+    ap(current_project: current_project)
+    current_project
+  }
+
+  register_subcommand(:chain) {
+    ap(inside: 'chain subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    exit 1 if subcommand == 'four'
+    %w[ hello world one two three ]
+  }
+
+  register_subcommand(:two) {
+    ap(inside: 'two subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    'hi'
+  }
+
+  register_subcommand(:three) {
+    ap(inside: 'three subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    nil
+  }
+
+  register_subcommand(:four) {
+    ap(inside: 'four subcmd', args: args, subcommand: subcommand, subcommand_chain: subcommand_chain)
+    exit 0
+  }
+
+end
+
+MainCommand.register_subcommand(:test) {
+  TestSubcommand.run(MainCommand.args)
+}
+
+# vim: ft=ruby

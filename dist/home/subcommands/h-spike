@@ -1,0 +1,59 @@
+
+
+
+class SpikeSubcommand
+  include ShellCommandable
+
+  let(:spike_dir) { File.join(Dir.home, 'spikes') }
+  let(:spikes) { Dir[File.join(spike_dir, '*/')].select(&File.method(:directory?)).map(&File.method(:basename)).sort }
+  let(:last_spike) { spikes.map(&:to_i).max }
+  let(:fmt) { '%05d' }
+  let(:next_num) { last_spike.to_i + 1 }
+  let(:next_name) { format(fmt, next_num) }
+  let(:next_dir) { File.join(spike_dir, next_name) }
+
+  register_subcommand(:list) {
+    puts spikes
+  }
+
+  register_subcommand(:next_name) {
+    puts format('Next Spike Name: "%s"', next_name)
+  }
+
+  register_subcommand(:next_num) {
+    puts format('Next Spike Num: "%s"', next_num)
+  }
+
+  register_subcommand(:next_dir) {
+    puts format('Next Spike Dir: "%s"', next_dir)
+  }
+
+  register_subcommand(:last_spike) {
+    puts format('Last Spike: "spike%05d"', last_spike)
+  }
+
+  register_subcommand(:new, :start) {
+    next_spike = next_num
+    next_spike_name = next_name
+    next_spike_dir = next_dir
+
+    spike_session_name = 'spike%s' % next_spike_name
+
+    HeroHelper.mkdirs(next_spike_dir)
+
+    HeroHelper.run_inside_dir(next_spike_dir) {
+      HeroHelper.system_from('git', 'init', '.')
+      HeroHelper.system_from('git', 'commit', '--allow-empty', '-m', format('starting %s spike', next_spike_name))
+    }
+
+    Tmux.force_session(spike_session_name, next_spike_dir)
+  }
+end
+
+MainCommand.register_subcommand(:spike) {
+  SpikeSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby

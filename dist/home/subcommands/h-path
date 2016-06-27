@@ -1,0 +1,48 @@
+class PathSubcommand
+  include ShellCommandable
+
+  class << self
+    def path_list
+      ENV['PATH'].split(/:+/)
+    end
+  end
+
+  register_subcommand(:append) {
+    error_exit('at least 1 arg is required to append to $PATH') if args.empty?
+
+    output = format('export PATH=$PATH:%s', args.join(?:))
+    Clipboard.copy(output)
+    puts output
+  }
+
+  register_subcommand(:prepend) {
+    error_exit('at least 1 arg is required to prepend to $PATH') if args.empty?
+
+    output = format('export PATH=%s:$PATH', args.join(?:))
+    Clipboard.copy(output)
+    puts output
+  }
+
+  register_subcommand(:list) {
+    puts path_list
+  }
+
+  register_subcommand(:uniq) {
+    puts path_list.uniq
+  }
+
+  register_subcommand(:search, :find) {
+    puts path_list.uniq.flat_map{|path|
+      Dir[ File.join(path, args.first) ]
+    }
+  }
+end
+
+MainCommand.register_subcommand(:path) {
+  PathSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby
+

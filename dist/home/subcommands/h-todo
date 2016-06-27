@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+class TodoSubcommand
+  include ShellCommandable
+
+  let(:project) { ProjectHelper.project_for(args.first) if args.any?  }
+  let(:project_dir) { project.nil? ? Dir.home : project.dir }
+
+  let(:todo_file) { File.join(project_dir, 'todo.md') }
+
+  register_subcommand(:list) {
+    cmd = HeroHelper.cmd_from('less', todo_file)
+    exec cmd # exec('less "%s"' % todo_file)
+  }
+
+  register_subcommand(:edit) {
+    HeroHelper.edit_in_editor(todo_file)
+  }
+end
+
+MainCommand.register_subcommand(:todo) {
+  TodoSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby

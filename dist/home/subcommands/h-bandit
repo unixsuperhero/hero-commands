@@ -1,0 +1,90 @@
+class BanditSubcommand
+  include ShellCommandable
+
+  let(:new_bandit_dir) {
+    File.join(Dir.home, 'projects', 'bandit')
+  }
+
+  let(:bandit_dir) { File.join(Dir.home, 'projects', 'bandit') }
+  let(:yaml_file) { File.join(bandit_dir, 'passwords.yml') }
+  let(:cd_to_dir) { Dir.chdir(bandit_dir) }
+  let(:config) { @config_file ||= Config.new(yaml_file, 'passwords') }
+  let(:next_game) { config.data.keys.map(&:to_i).max }
+  let(:password_for) {|game| config.data[game.to_i] }
+  let(:run_game) {|game| system(HeroHelper.cmd_from('./bandit.exp', game.to_s, password_for(game))) }
+
+  before{
+    puts format('pwd before cd: %s', Dir.pwd)
+    cd_to_dir
+    puts format('pwd after cd: %s', Dir.pwd)
+  }
+
+  dynamic_subcommand {
+    run_game subcommand
+    exit 0
+  }
+
+  register_subcommand(:host) {
+    printf 'bandit.labs.overthewire.org'
+  }
+
+  register_subcommand(:scp_from) {
+    game,src,dst = args.first(3)
+    pw = config.data[game.to_i]
+    Clipboard.copy(pw)
+    Clipboard.show_copied_text
+    cmd = HeroHelper.cmd_from('scp', 'bandit%d@bandit.labs.overthewire.org:%s' % [game, src], dst)
+    system(cmd)
+  }
+
+  register_subcommand(:scp_to) {
+    game,src,dst = args.first(3)
+    pw = config.data[game.to_i]
+    Clipboard.copy(pw)
+    Clipboard.show_copied_text
+    cmd = HeroHelper.cmd_from('scp', src, 'bandit%d@bandit.labs.overthewire.org:%s' % [game, dst])
+    system(cmd)
+  }
+
+  register_subcommand(:pry) {
+    binding.pry
+  }
+
+  register_subcommand(:next) {
+    run_game next_game
+    exit 0
+  }
+
+  register_subcommand(:list, :show) {
+    ap passwords: config.data
+  }
+
+  register_subcommand(:localhost) {
+    cmd = %{nextgame=$(( $(whoami | egrep -o "[0-9]+") + 1 )); ssh localhost -l "bandit${nextgame}"}
+    Clipboard.copy(cmd)
+    Clipboard.show_copied_text
+  }
+
+  register_subcommand(:site) {
+    HeroHelper.exec_from('open', 'http://overthewire.org')
+  }
+
+  register_subcommand(:hint) {
+    HeroHelper.exec_from('open', "http://overthewire.org/wargames/bandit/bandit#{(args.first || next_game).to_i + 1}.html")
+  }
+
+  register_subcommand(:password, :pw) {
+    game,pw = args.first(2)
+    config.merge(game.to_i => pw)
+    puts format('config saved: %s', config.save)
+    exit 0
+  }
+end
+
+MainCommand.register_subcommand(:bandit) {
+  BanditSubcommand.run(MainCommand.args)
+}
+
+
+
+# vim: ft=ruby
