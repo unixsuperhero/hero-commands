@@ -7,7 +7,11 @@ class TmuxSubcommand
   }
 
   register_subcommand(:pry) {
-    exec('tmux', 'splitw', '-p', '25', 'pry', '-rawesome_print', '-ryaml', '-rjson')
+    if Dir['{app,spec}/'].length == 2
+      exec('tmux', 'splitw', '-p', '25', 'rails', 'c')
+    else
+      exec('tmux', 'splitw', '-p', '25', 'pry', '-rawesome_print', '-ryaml', '-rjson')
+    end
   }
 
   register_subcommand(:sessions, :ls) {

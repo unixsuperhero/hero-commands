@@ -810,8 +810,12 @@ class HeroHelper
       string
     end
 
-    def edit_in_editor(*args)
-      exec cmd_from(args.unshift(editor))
+    def edit_in_editor(*args, halt: true)
+      if halt
+        exec cmd_from(args.unshift(editor))
+      else
+        system cmd_from(args.unshift(editor))
+      end
     end
 
     def cmd_from(*args)
