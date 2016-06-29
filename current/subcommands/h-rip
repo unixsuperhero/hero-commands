@@ -77,7 +77,7 @@ class RipSubcommand
 
     log_key_selected = Proc.new{|key,sel| puts({ key: key, selected: sel ? true : false }.inspect) }
     puts 'selected keys:'
-    puts '  %s' % config.data.keys.select{|k|
+    config.data.keys.select{|k|
       if args.first.nil?
         (k != 'http:').tap(&log_key_selected)
       else
@@ -86,6 +86,7 @@ class RipSubcommand
     }.map{|manga|
       url = config.data.dig(manga, 'url')
       MangaparkRipper.run(url, manga)
+      exit 0
       # system('h-rip', url, manga)
     }.join("\n  ")
   }
