@@ -194,7 +194,7 @@ class Value
   alias_method :update, :merge
 
   def method_missing(name, *args)
-    default.respond_to?(:dup) ? default.dup : default
+    default.is_a?(Numeric) ? default : default.dup
   end
 
   private def singleton
