@@ -144,7 +144,7 @@ class MangaparkRipper < RipperPlugin
 
     def url_parts
       @url_parts ||= Proc.new{
-        parts = url.split(%r{/+}).take_while{|part|
+        parts = url.split(%r{/+}).drop_while{|part|
           part != 'manga'
         }
         parts.shift
@@ -152,10 +152,13 @@ class MangaparkRipper < RipperPlugin
           parts.each{|part|
             case part
             when /^(?<=s)(\d+([.]\d+)?)$/
+              ap(in: :stream, tilde: $~, amp: $&)
               hash.merge!(stream: $~[1])
             when /^(?<=v)(\d+([.]\d+)?)$/
+              ap(in: :volume, tilde: $~, amp: $&)
               hash.merge!(volume: $~[1])
             when /^(?<=c)(\d+([.]\d+)?)$/
+              ap(in: :chapter, tilde: $~, amp: $&)
               hash.merge!(chapter: $~[1])
             end
           }
