@@ -148,24 +148,23 @@ class MangaparkRipper < RipperPlugin
           part != 'manga'
         }
         parts.shift
-        { manga: parts.shift }.tap{|hash|
-          parts.each{|part|
-            case part
-            when /(?<=^s)(\d+([.]\d+)?)$/
-              ap(in: :stream, tilde: $~, amp: $&)
-              hash.merge!(stream: $~[1])
-            when /(?<=^v)(\d+([.]\d+)?)$/
-              ap(in: :volume, tilde: $~, amp: $&)
-              hash.merge!(volume: $~[1])
-            when /(?<=^c)(\d+([.]\d+)?)$/
-              ap(in: :chapter, tilde: $~, amp: $&)
-              hash.merge!(chapter: $~[1])
-            else
-              ap(in: :else, part: part)
-            end
-          }
-        }
+        Value.new({ manga: parts.shift }.tap(&url_extractor_proc))
       }.call
+    end
+
+    def url_extractor_proc
+      Proc.new{|hash|
+        parts.each{|part|
+          case part
+          when /(?<=^s)(\d+([.]\d+)?)$/
+            hash.merge!(stream: $~[1])
+          when /(?<=^v)(\d+([.]\d+)?)$/
+            hash.merge!(volume: $~[1])
+          when /(?<=^c)(\d+([.]\d+)?)$/
+            hash.merge!(chapter: $~[1])
+          end
+        }
+      }
     end
 
     def http
