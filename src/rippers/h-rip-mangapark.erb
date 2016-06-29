@@ -102,6 +102,13 @@ class MangaparkRipper < RipperPlugin
     end
 
     def run(url, destination=nil)
+      pg = Page.new(url)
+      ap(page: pg,
+         url_parts: pg.url_parts)
+      exit 0
+    end
+
+    def original_run(url, destination=nil)
       destination ||= url[%r{(?<=/manga/)[^/]+}]
       puts format('download_dir: %s', download_dir(destination))
 
@@ -126,6 +133,44 @@ class MangaparkRipper < RipperPlugin
         return next_page_link
         run(next_page_link, destination)
       end
+    end
+  end
+
+  class Page
+    attr_reader :url
+    def initialize(url)
+      @url = url
+    end
+
+    def url_parts
+      @url_parts ||= url.split(%r{/+}).select{|part|
+        part[/^[a-z]\d+([.]\d+)?$/]
+      }
+    end
+
+    def http
+      @http ||= Mechanize.new
+    end
+
+    def page
+      @page ||= http.get(url)
+    end
+
+    def images
+      @images ||= page.images_with(class: /\bimg\b/)
+    end
+
+    def save_images_to(path=Dir.pwd)
+      images.each_with_index{|img,i|
+        outfile = format(outfile_format, i)
+
+        if File.exist?(outfile)
+          puts format('File exists: %s', outfile)
+        else
+          puts format('saving: %s', outfile)
+          img.fetch.save_as(outfile)
+        end
+      }
     end
   end
 end
