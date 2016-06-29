@@ -148,7 +148,7 @@ class MangaparkRipper < RipperPlugin
           part != 'manga'
         }
         parts.shift
-        Value.new(url_extractor({ manga: parts.shift }, parts)).asdfasdf
+        Value.new(url_extractor({ manga: parts.shift }, parts), default: 0).asdfasdf
       }.call
     end
 
