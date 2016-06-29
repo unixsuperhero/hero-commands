@@ -109,7 +109,7 @@ class MangaparkRipper < RipperPlugin
       pg.save_to(destination)
 
       ap(page: pg,
-         url_parts: pg.url_parts)
+         url_parts: pg.url_parts,
          destination: destination)
       exit 0
     end
