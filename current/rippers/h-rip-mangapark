@@ -160,6 +160,8 @@ class MangaparkRipper < RipperPlugin
             when /^(?<=c)(\d+([.]\d+)?)$/
               ap(in: :chapter, tilde: $~, amp: $&)
               hash.merge!(chapter: $~[1])
+            else
+              ap(in: :else, part: part)
             end
           }
         }
