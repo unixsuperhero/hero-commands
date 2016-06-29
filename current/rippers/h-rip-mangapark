@@ -148,12 +148,12 @@ class MangaparkRipper < RipperPlugin
           part != 'manga'
         }
         parts.shift
-        Value.new({ manga: parts.shift }.tap(&url_extractor_proc))
+        Value.new(url_extractor_proc.call({ manga: parts.shift }, parts))
       }.call
     end
 
     def url_extractor_proc
-      Proc.new{|hash|
+      Proc.new{|hash,parts|
         parts.each{|part|
           case part
           when /(?<=^s)(\d+([.]\d+)?)$/
