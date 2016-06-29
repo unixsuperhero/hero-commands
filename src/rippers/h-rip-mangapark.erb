@@ -181,14 +181,17 @@ class MangaparkRipper < RipperPlugin
       parts.each{|part|
         case part
         when /(?<=^s)(\d+([.]\d+)?)$/
-          ap(in: :stream, tilde: $~, one: $~[1], amp: $&)
-          hash.merge!(stream: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+          match = $~
+          ap(in: :stream, tilde: match, one: match[1], amp: $&)
+          hash.merge!(stream: match[1][/[.]/] ? match[1].to_f : match[1].to_i)
         when /(?<=^v)(\d+([.]\d+)?)$/
-          ap(in: :volume, tilde: $~, one: $~[1], amp: $&)
-          hash.merge!(volume: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+          match = $~
+          ap(in: :volume, tilde: match, one: match[1], amp: $&)
+          hash.merge!(volume: match[1][/[.]/] ? match[1].to_f : match[1].to_i)
         when /(?<=^c)(\d+([.]\d+)?)$/
-          ap(in: :chapter, tilde: $~, one: $~[1], amp: $&)
-          hash.merge!(chapter: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+          match = $~
+          ap(in: :chapter, tilde: match, one: match[1], amp: $&)
+          hash.merge!(chapter: match[1][/[.]/] ? match[1].to_f : match[1].to_i)
         end
       }
       Value.new(hash, default: 0)
