@@ -79,9 +79,9 @@ class RipSubcommand
     puts 'selected keys:'
     puts '  %s' % config.data.keys.select{|k|
       if args.first.nil?
-        (k != 'http:').tap(log_key_selected)
+        (k != 'http:').tap(&log_key_selected)
       else
-        (k[Regexp.new(args.first, ?i)]).tap(log_key_selected)
+        (k[Regexp.new(args.first, ?i)]).tap(&log_key_selected)
       end
     }.map{|manga|
       url = config.data.dig(manga, 'url')
