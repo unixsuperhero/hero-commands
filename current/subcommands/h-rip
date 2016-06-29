@@ -75,16 +75,18 @@ class RipSubcommand
   register_subcommand(:update) {
     config = Config.new(File.join(Dir.home, 'rippers.yml'), 'mangapark')
 
+    log_key_selected = Proc.new{|key,sel| puts({ key: key, selected: sel ? true : false }.inspect) }
     puts 'selected keys:'
     puts '  %s' % config.data.keys.select{|k|
       if args.first.nil?
-        k != 'http:'
+        (k != 'http:').tap(log_key_selected)
       else
-        k[Regexp.new(args.first, ?i)]
+        (k[Regexp.new(args.first, ?i)]).tap(log_key_selected)
       end
     }.map{|manga|
       url = config.data.dig(manga, 'url')
-      system('h-rip', url, manga)
+      MangaparkRipper.run(url, manga)
+      # system('h-rip', url, manga)
     }.join("\n  ")
   }
 end
