@@ -101,10 +101,16 @@ class MangaparkRipper < RipperPlugin
       @config ||= Config.new(File.join(Dir.home, 'rippers.yml'), 'mangapark', destination)
     end
 
-    def run(url, destination=nil)
+    def run(url, dest=nil)
+      base_dir = File.join(Dir.home, 'dl', 'mangapark')
+
       pg = Page.new(url)
+      destination = dest ? File.join(base_dir, dest) : File.join(base_dir, pg.manga)
+      pg.save_to(destination)
+
       ap(page: pg,
          url_parts: pg.url_parts)
+         destination: destination)
       exit 0
     end
 
@@ -138,33 +144,51 @@ class MangaparkRipper < RipperPlugin
 
   class Page
     attr_reader :url
-    def initialize(url)
-      @url = url
+    def initialize(url, dest=nil)
+      @url, @dest = url, dest
+    end
+
+    def destination
+      File.join(Dir.home, 'dl', 'mangapark', @dest || manga)
     end
 
     def url_parts
-      @url_parts ||= Proc.new{
-        parts = url.split(%r{/+}).drop_while{|part|
-          part != 'manga'
-        }
-        parts.shift
-        Value.new(url_extractor({ manga: parts.shift }, parts), default: 0)
-      }.call
+      @url_parts ||= url_extractor
     end
 
-    def url_extractor(parts_hash={}, parts)
-      parts_hash.tap{|hash|
-        parts.each{|part|
-          case part
-          when /(?<=^s)(\d+([.]\d+)?)$/
-            hash.merge!(stream: $~[1])
-          when /(?<=^v)(\d+([.]\d+)?)$/
-            hash.merge!(volume: $~[1])
-          when /(?<=^c)(\d+([.]\d+)?)$/
-            hash.merge!(chapter: $~[1])
-          end
-        }
+    def manga
+      url_parts.manga
+    end
+
+    def stream
+      url_parts.stream
+    end
+
+    def chapter
+      url_parts.chapter
+    end
+
+    def volume
+      url_parts.volume
+    end
+
+    def url_extractor(given_url=url)
+      parts = given_url.split(%r{/+}).drop_while{|part|
+        part != 'manga'
       }
+      parts.shift
+      hash = { manga: parts.shift }
+      parts.each{|part|
+        case part
+        when /(?<=^s)(\d+([.]\d+)?)$/
+          hash.merge!(stream: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+        when /(?<=^v)(\d+([.]\d+)?)$/
+          hash.merge!(volume: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+        when /(?<=^c)(\d+([.]\d+)?)$/
+          hash.merge!(chapter: $~[1][/[.]/] ? $~[1].to_f : $~[1].to_i)
+        end
+      }
+      Value.new(hash, default: 0)
     end
 
     def http
@@ -179,9 +203,10 @@ class MangaparkRipper < RipperPlugin
       @images ||= page.images_with(class: /\bimg\b/)
     end
 
-    def save_images_to(path=Dir.pwd)
+    def save_to(path=Dir.pwd)
       images.each_with_index{|img,i|
-        outfile = format(outfile_format, i)
+        fname = format('%03d-%5.2f-%03d.png', volume, chapter, i)
+        outfile = File.join(path, fname)
 
         if File.exist?(outfile)
           puts format('File exists: %s', outfile)
@@ -190,6 +215,17 @@ class MangaparkRipper < RipperPlugin
           img.fetch.save_as(outfile)
         end
       }
+    end
+
+    def next_page
+      next_page_link = page.links.find{|l| l.text[/Next/] }
+      next_page_link &&= next_page_link.resolved_uri.to_s
+      return nil unless next_page_link
+
+      parts_for_next = url_extractor(next_page_link)
+      return nil if parts_for_next.chapter < chapter
+
+      next_page_link
     end
   end
 end
