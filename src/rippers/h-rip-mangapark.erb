@@ -143,9 +143,24 @@ class MangaparkRipper < RipperPlugin
     end
 
     def url_parts
-      @url_parts ||= url.split(%r{/+}).select{|part|
-        part[/^[a-z]\d+([.]\d+)?$/]
-      }
+      @url_parts ||= Proc.new{
+        parts = url.split(%r{/+}).take_while{|part|
+          part != 'manga'
+        }
+        parts.shift
+        { manga: parts.shift }.tap{|hash|
+          parts.each{|part|
+            case part
+            when /^(?<=s)(\d+([.]\d+)?)$/
+              hash.merge!(stream: $~[1])
+            when /^(?<=v)(\d+([.]\d+)?)$/
+              hash.merge!(volume: $~[1])
+            when /^(?<=c)(\d+([.]\d+)?)$/
+              hash.merge!(chapter: $~[1])
+            end
+          }
+        }
+      }.call
     end
 
     def http
