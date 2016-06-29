@@ -151,13 +151,13 @@ class MangaparkRipper < RipperPlugin
         { manga: parts.shift }.tap{|hash|
           parts.each{|part|
             case part
-            when /^(?<=s)(\d+([.]\d+)?)$/
+            when /(?<=^s)(\d+([.]\d+)?)$/
               ap(in: :stream, tilde: $~, amp: $&)
               hash.merge!(stream: $~[1])
-            when /^(?<=v)(\d+([.]\d+)?)$/
+            when /(?<=^v)(\d+([.]\d+)?)$/
               ap(in: :volume, tilde: $~, amp: $&)
               hash.merge!(volume: $~[1])
-            when /^(?<=c)(\d+([.]\d+)?)$/
+            when /(?<=^c)(\d+([.]\d+)?)$/
               ap(in: :chapter, tilde: $~, amp: $&)
               hash.merge!(chapter: $~[1])
             else
