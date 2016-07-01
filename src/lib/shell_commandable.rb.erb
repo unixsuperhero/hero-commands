@@ -39,6 +39,8 @@ module ShellCommandable
       extract_special_modifiers
       extract_modifiers
 
+      ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
+
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
           block_returned = nil
