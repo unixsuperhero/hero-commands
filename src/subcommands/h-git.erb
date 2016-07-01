@@ -115,7 +115,6 @@ class Git
     end
 
     def current_branch
-      puts 'TESTING'
       `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
     end
 
