@@ -350,7 +350,7 @@ class GitSubcommand
 
     exit 1 if branches.empty?
 
-    return branches
+    break branches
     exit 0
 
     # -------------
