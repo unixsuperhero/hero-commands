@@ -350,18 +350,7 @@ class GitSubcommand
 
     exit 1 if branches.empty?
 
-    break branches
-    exit 0
-
-    # -------------
-
-    if args.empty?
-      puts branches
-      exit 0
-    end
-
-    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
-    exit 0
+    branches.tap{|b| puts b }
   }
 end
 
