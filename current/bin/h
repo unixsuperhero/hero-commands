@@ -302,68 +302,35 @@ module ShellCommandable
     attr_accessor :subcommand, :subcommand_chain
     attr_accessor :let_blocks
 
-    def let_blocks
-      @let_blocks ||= {}
+    attr_accessor :original_args, :usable_args
+    attr_accessor :args_with_subcommand, :args_without_subcommand
+    attr_accessor :subcommand_query
+
+    def args_with_subcommand
+      [subcommand] + usable_args
     end
 
-    def let(name, &block)
-      let_blocks.merge!(name => block)
-      define_singleton_method(name, &block)
+    def args_without_subcommand
+      usable_args
     end
 
-    def special_modifier_args
-      @special_modifier_args ||= {}
-    end
+    def run(passed_args=nil)
+      @usable_args = passed_args if passed_args
+      @original_args = args.clone
+      @subcommand_query = args.shift
 
-    def modifier_args
-      @modifier_args ||= []
-    end
+      @subcommand = subcommand_matcher.match(subcommand_query)
 
-    def extract_special_modifiers
-      special_modifiers.keys.each do |mod|
-        index = args.index(mod.to_s)
-        next if index.nil?
+      ap(
+        usable_args: @usable_args,
+        original_args: @original_args,
+        subcommand_query: @subcommand_query,
+        args_without_subcommand: @args_without_subcommand,
+        args_with_subcommand: @args_with_subcommand,
+        subcommand: @subcommand,
+      )
 
-        key = args[index]
-        val = args[(index+1)..-1]
-        special_modifier_args.merge!(key => val)
-
-        len = args[index..-1].length
-        args.pop(len)
-      end
-    end
-
-    def extract_modifiers
-      args.reverse.take_while{|arg|
-        modifiers.keys.map(&:to_s).include?(arg)
-      }.tap{|mods|
-        break mods if mods.empty?
-        mods.each{|mod|
-          modifier_args.unshift args.pop
-        }
-      }
-    end
-
-    def apply_modifiers(returned)
-      if special_modifier_args.keys.any?
-        returned = special_modifier_args.keys.inject(returned) do |retval,smod|
-          cmd = special_modifier_args[smod]
-          special_modifiers[smod].call(retval, cmd)
-        end
-      end
-
-      if modifier_args.any?
-        returned = modifier_args.inject(returned) do |retval,mod|
-          modifiers[mod].call(retval)
-        end
-      end
-
-      returned
-    end
-
-    def run(args=ARGV.clone)
-      @args = args
-      @subcommand = args.shift
+      exit 0
 
       extract_special_modifiers
       extract_modifiers
@@ -433,6 +400,82 @@ module ShellCommandable
       exit 1
     end
 
+    def let_blocks
+      @let_blocks ||= {}
+    end
+
+    def let(name, &block)
+      let_blocks.merge!(name => block)
+      define_singleton_method(name, &block)
+    end
+
+    def special_modifier_args
+      @special_modifier_args ||= {}
+    end
+
+    def modifier_args
+      @modifier_args ||= []
+    end
+
+    def has_modifiers
+      @has_modifiers ||= false
+    end
+
+    def has_modifiers!
+      @has_modifiers = true
+    end
+
+    def has_modifiers?
+      @has_modifiers == true
+    end
+
+    def extract_special_modifiers
+      special_modifiers.keys.each do |mod|
+        index = args.index(mod.to_s)
+        next if index.nil?
+
+        has_modifiers!
+
+        key = args[index]
+        val = args[(index+1)..-1]
+        special_modifier_args.merge!(key => val)
+
+        len = args[index..-1].length
+        args.pop(len)
+      end
+    end
+
+    def extract_modifiers
+      args.reverse.take_while{|arg|
+        modifiers.keys.map(&:to_s).include?(arg)
+      }.tap{|mods|
+        break mods if mods.empty?
+
+        has_modifiers!
+
+        mods.each{|mod|
+          modifier_args.unshift args.pop
+        }
+      }
+    end
+
+    def apply_modifiers(returned)
+      if special_modifier_args.keys.any?
+        returned = special_modifier_args.keys.inject(returned) do |retval,smod|
+          cmd = special_modifier_args[smod]
+          special_modifiers[smod].call(retval, cmd)
+        end
+      end
+
+      if modifier_args.any?
+        returned = modifier_args.inject(returned) do |retval,mod|
+          modifiers[mod].call(retval)
+        end
+      end
+
+      returned
+    end
+
     def error_exit(msg=nil, &block)
       puts format('ERROR: %s', msg) if msg
 
@@ -470,7 +513,7 @@ module ShellCommandable
     end
 
     def args
-      argv
+      @usable_args ||= ARGV.clone
     end
 
     def argv
