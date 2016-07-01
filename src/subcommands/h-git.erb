@@ -172,7 +172,7 @@ class GitSubcommand
   }
 
   register_subcommand(:current_branch){
-    puts format("current branch: %s", Git.current_branch)
+    puts format("%s", Git.current_branch)
   }
 
   register_subcommand(:prefix){
