@@ -55,16 +55,16 @@ module ShellCommandable
         end
       end
 
-      if @subcommand.index(?:) && @subcommand.index(?:) > 0
-        @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
-      end
+      # if @subcommand.index(?:) && @subcommand.index(?:) > 0
+      #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
+      # end
 
-      @runner = subcommand_matcher.match(@subcommand)
+      # @runner = @subcommand # subcommand_matcher.match(@subcommand)
 
-      if @runner
+      if @subcommand
         block_returned = nil
         hooks_returned = run_with_hooks{
-          block_returned = @runner.data.call
+          block_returned = @subcommand.data.call
           block_returned = apply_modifiers(block_returned)
         }
         return block_returned
@@ -78,17 +78,17 @@ module ShellCommandable
         #       where one set of args end and next subcmd begins like '\;'
         #       because it is escaped...it shouldn't interfere with bash or zsh
         #       (and find uses it)
-        if @subcommand_chain
-          if command_output
-            if command_output.is_a?(Array)
-              run([@subcommand_chain] + command_output)
-            else
-              run([@subcommand_chain, command_output])
-            end
-          else
-            run([@subcommand_chain])
-          end
-        end
+        ## if @subcommand_chain
+        ##   if command_output
+        ##     if command_output.is_a?(Array)
+        ##       run([@subcommand_chain] + command_output)
+        ##     else
+        ##       run([@subcommand_chain, command_output])
+        ##     end
+        ##   else
+        ##     run([@subcommand_chain])
+        ##   end
+        ## end
 
         exit 0
       end
