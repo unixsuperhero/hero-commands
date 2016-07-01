@@ -19,10 +19,10 @@ class AnimeSubcommand
 
     def series_matching_first_arg
       return {} if args.empty?
-      @series_matching_arg ||= begin
+      @series_matching_arg ||= Proc.new{
         pattern = Regexp.new(args.first, ?i)
         series_info.select{|sname,sdir| sname[pattern] }
-      end
+      }.call
     end
 
     def cd_if_series_matches_arg

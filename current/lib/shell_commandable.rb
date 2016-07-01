@@ -6,8 +6,14 @@ module ShellCommandable
 
   module ClassMethods
     attr_accessor :subcommand, :subcommand_chain
+    attr_accessor :let_blocks
+
+    def let_blocks
+      @let_blocks ||= {}
+    end
 
     def let(name, &block)
+      let_blocks.merge!(name => block)
       define_singleton_method(name, &block)
     end
 
@@ -101,7 +107,7 @@ module ShellCommandable
     end
 
     def current_project
-      @current_project ||= begin
+      @current_project ||= Proc.new{
         pwd = Dir.pwd
         possible_projects = ProjectHelper.projects.select{|name,dir|
           pwd.start_with?(dir)
@@ -110,7 +116,7 @@ module ShellCommandable
         return if possible_projects.empty?
         name,dir = possible_projects.max_by{|name,dir| dir.length }
         ProjectHelper.project_for(name)
-      end
+      }.call
     end
 
     def args
@@ -163,6 +169,14 @@ module ShellCommandable
 
     def dynamic_subcommand(&block)
       @dynamic_subcommand = block
+    end
+
+    def modifiers
+      @registered_modifiers ||= {}
+    end
+
+    def register_modifier(*names, &block)
+      names.each{|name| modifiers.merge!( name.to_s => block ) }
     end
 
     def register_subcommand(*names, &block)
