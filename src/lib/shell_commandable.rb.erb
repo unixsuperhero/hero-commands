@@ -27,16 +27,14 @@ module ShellCommandable
 
       @subcommand = subcommand_matcher.match(subcommand_query)
 
-      ap(
-        usable_args: @usable_args,
-        original_args: @original_args,
-        subcommand_query: @subcommand_query,
-        args_without_subcommand: @args_without_subcommand,
-        args_with_subcommand: @args_with_subcommand,
-        subcommand: @subcommand,
-      )
-
-      exit 0
+      # ap(
+      #   usable_args: @usable_args,
+      #   original_args: @original_args,
+      #   subcommand_query: @subcommand_query,
+      #   args_without_subcommand: @args_without_subcommand,
+      #   args_with_subcommand: @args_with_subcommand,
+      #   subcommand: @subcommand,
+      # )
 
       extract_special_modifiers
       extract_modifiers
