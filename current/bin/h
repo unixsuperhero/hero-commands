@@ -311,15 +311,69 @@ module ShellCommandable
       define_singleton_method(name, &block)
     end
 
+    def special_modifier_args
+      @special_modifier_args ||= {}
+    end
+
+    def modifier_args
+      @modifier_args ||= []
+    end
+
+    def extract_special_modifiers
+      special_modifiers.keys.each do |mod|
+        index = args.index(mod.to_s)
+        next if index.nil?
+
+        key = args[index]
+        val = args[(index+1)..-1]
+        special_modifier_args.merge!(key => val)
+
+        len = args[index..-1].length
+        args.pop(len)
+      end
+    end
+
+    def extract_modifiers
+      args.reverse.take_while{|arg|
+        modifiers.keys.map(&:to_s).include?(arg)
+      }.tap{|mods|
+        break mods if mods.empty?
+        mods.each{|mod|
+          modifier_args.unshift args.pop
+        }
+      }
+    end
+
+    def apply_modifiers(returned)
+      if special_modifier_args.keys.any?
+        returned = special_modifier_args.keys.inject(returned) do |retval,smod|
+          cmd = special_modifier_args[smod]
+          special_modifiers[smod].call(retval, cmd)
+        end
+      end
+
+      if modifier_args.any?
+        returned = modifier_args.inject(returned) do |retval,mod|
+          modifiers[mod].call(retval)
+        end
+      end
+
+      returned
+    end
+
     def run(args=ARGV.clone)
       @args = args
       @subcommand = args.shift
+
+      extract_special_modifiers
+      extract_modifiers
 
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
           block_returned = nil
           hooks_returned = run_with_hooks{
             block_returned = @no_subcommand.call
+            block_returned = apply_modifiers(block_returned)
           }
           return block_returned
         else
@@ -338,6 +392,7 @@ module ShellCommandable
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @runner.data.call
+          block_returned = apply_modifiers(block_returned)
         }
         return block_returned
 
@@ -369,6 +424,7 @@ module ShellCommandable
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
+          block_returned = apply_modifiers(block_returned)
         }
         return block_returned
       end
@@ -465,8 +521,16 @@ module ShellCommandable
       @dynamic_subcommand = block
     end
 
+    def special_modifiers
+      @registered_special_modifiers ||= {}
+    end
+
     def modifiers
       @registered_modifiers ||= {}
+    end
+
+    def register_special_modifier(*names, &block)
+      names.each{|name| special_modifiers.merge!( name.to_s => block ) }
     end
 
     def register_modifier(*names, &block)
@@ -978,113 +1042,107 @@ class MainCommand
       args.shift
     end
 
-    modified_with_special = special_modifier_args.keys.map{|arg|
-      index = args.index(arg)
-      next if index.nil?
-      left = args[0..(index - 1)]
-      right = args[(index + 1)..-1]
-      args = left
-      [arg, right]
-    }.compact.to_h
+    # modified_with_special = special_modifier_args.keys.map{|arg|
+    #   index = args.index(arg)
+    #   next if index.nil?
+    #   left = args[0..(index - 1)]
+    #   right = args[(index + 1)..-1]
+    #   args = left
+    #   [arg, right]
+    # }.compact.to_h
 
-    modified_with = args.reverse.take_while{|arg|
-      modifier_args.keys.include?(arg)
-    }
-    modified_with.length.times{ args.pop }
+    # modified_with = args.reverse.take_while{|arg|
+    #   modifier_args.keys.include?(arg)
+    # }
+    # modified_with.length.times{ args.pop }
 
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
         returned = super
-        modified_with_special.each{|arg,cmd|
-          puts
-          puts (header = 'Modified Output')
-          puts ?- * header.length
-          special_modifier_args[arg].call(returned, cmd)
-        }
+        # modified_with_special.each{|arg,cmd|
+        #   puts
+        #   puts (header = 'Modified Output')
+        #   puts ?- * header.length
+        #   special_modifier_args[arg].call(returned, cmd)
+        # }
 
-        modified_with.each{|arg|
-          puts
-          puts (header = 'Modified Output')
-          puts ?- * header.length
-          modifier_args[arg].call(returned)
-        }
+        # modified_with.each{|arg|
+        #   puts
+        #   puts (header = 'Modified Output')
+        #   puts ?- * header.length
+        #   modifier_args[arg].call(returned)
+        # }
       }
     else
       returned = super
-      modified_with_special.each{|arg,cmd|
-        puts
-        puts (header = 'Modified Output')
-        puts ?- * header.length
-        special_modifier_args[arg].call(returned, cmd)
-      }
+      # modified_with_special.each{|arg,cmd|
+      #   puts
+      #   puts (header = 'Modified Output')
+      #   puts ?- * header.length
+      #   special_modifier_args[arg].call(returned, cmd)
+      # }
 
-      modified_with.each{|arg|
-        puts
-        puts (header = 'Modified Output')
-        puts ?- * header.length
-        modifier_args[arg].call(returned)
-      }
+      # modified_with.each{|arg|
+      #   puts
+      #   puts (header = 'Modified Output')
+      #   puts ?- * header.length
+      #   modifier_args[arg].call(returned)
+      # }
     end
   end
 
-  def self.modifier_args
-    {
-      '@vim' => Proc.new{|returned|
-        HeroHelper.edit_in_editor *returned.flatten
-      },
-      '@capture' => Proc.new{|returned|
-        tempfile = Tempfile.create('hero')
+  register_modifier(:@vim){|returned|
+    HeroHelper.edit_in_editor *returned.flatten
+  }
 
-        case returned
-        when String
-          IO.write(tempfile.path, returned)
-          HeroHelper.edit_in_editor(tempfile.path)
-        when Array
-          File.open(tempfile.path, 'w+') {|fd|
-            fd.puts returned
-          }
-          HeroHelper.edit_in_editor(tempfile.path)
-        else
-          puts format('Not sure how to capture a %s...', returned.class)
-        end
+  register_modifier(:@capture){|returned|
+    tempfile = Tempfile.create('hero')
 
-        tempfile.delete
-        tempfile.close
+    case returned
+    when String
+      IO.write(tempfile.path, returned)
+      HeroHelper.edit_in_editor(tempfile.path)
+    when Array
+      File.open(tempfile.path, 'w+') {|fd|
+        fd.puts returned
       }
+      HeroHelper.edit_in_editor(tempfile.path)
+    else
+      puts format('Not sure how to capture a %s...', returned.class)
+    end
+
+    tempfile.delete
+    tempfile.close
+  }
+
+  register_special_modifier(:@each){|returned,cmd|
+    break unless returned.is_a?(Array)
+    if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+      cmd.push '%s'
+    end
+    gsub = %r{(?<!\\)%s}i
+    cmd = cmd.map{|arg| arg.gsub(gsub, '%<arg>s') }
+    returned.map{|arg|
+      current_command = cmd.map{|item| format(item, arg: arg.shellescape) }
+      system(*current_command)
     }
-  end
+  }
 
-  def self.special_modifier_args
-    {
-      '@each' => Proc.new{|returned,cmd|
-        break unless returned.is_a?(Array)
-        if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
-          cmd.push '%s'
-        end
-        gsub = %r{(?<!\\)%s}i
-        cmd = cmd.map{|arg| arg.gsub(gsub, '%<arg>s') }
-        returned.map{|arg|
-          current_command = cmd.map{|item| format(item, arg: arg.shellescape) }
-          system(*current_command)
-        }
-      },
-      '@all' => Proc.new{|returned,cmd|
-        break unless returned.is_a?(Array)
-        if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
-          cmd.push '%s'
-        end
-        gsub = %r{(?<!\\)%s}i
+  register_special_modifier(:@all){|returned,cmd|
+    break unless returned.is_a?(Array)
+    if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+      cmd.push '%s'
+    end
+    gsub = %r{(?<!\\)%s}i
 
-        to_add = returned.map(&:shellescape)
-        while cmdi = cmd.index('%s')
-          cmd[cmdi] = to_add
-          cmd = cmd.flatten
-        end
+    to_add = returned.map(&:shellescape)
+    while cmdi = cmd.index('%s')
+      cmd[cmdi] = to_add
+      cmd = cmd.flatten
+    end
 
-        system(*cmd)
-      },
-    }
-  end
+    system(*cmd)
+  }
 
   def self.project_context?
     ! @project_context.nil?

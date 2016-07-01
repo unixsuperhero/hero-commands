@@ -17,15 +17,69 @@ module ShellCommandable
       define_singleton_method(name, &block)
     end
 
+    def special_modifier_args
+      @special_modifier_args ||= {}
+    end
+
+    def modifier_args
+      @modifier_args ||= []
+    end
+
+    def extract_special_modifiers
+      special_modifiers.keys.each do |mod|
+        index = args.index(mod.to_s)
+        next if index.nil?
+
+        key = args[index]
+        val = args[(index+1)..-1]
+        special_modifier_args.merge!(key => val)
+
+        len = args[index..-1].length
+        args.pop(len)
+      end
+    end
+
+    def extract_modifiers
+      args.reverse.take_while{|arg|
+        modifiers.keys.map(&:to_s).include?(arg)
+      }.tap{|mods|
+        break mods if mods.empty?
+        mods.each{|mod|
+          modifier_args.unshift args.pop
+        }
+      }
+    end
+
+    def apply_modifiers(returned)
+      if special_modifier_args.keys.any?
+        returned = special_modifier_args.keys.inject(returned) do |retval,smod|
+          cmd = special_modifier_args[smod]
+          special_modifiers[smod].call(retval, cmd)
+        end
+      end
+
+      if modifier_args.any?
+        returned = modifier_args.inject(returned) do |retval,mod|
+          modifiers[mod].call(retval)
+        end
+      end
+
+      returned
+    end
+
     def run(args=ARGV.clone)
       @args = args
       @subcommand = args.shift
+
+      extract_special_modifiers
+      extract_modifiers
 
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
           block_returned = nil
           hooks_returned = run_with_hooks{
             block_returned = @no_subcommand.call
+            block_returned = apply_modifiers(block_returned)
           }
           return block_returned
         else
@@ -44,6 +98,7 @@ module ShellCommandable
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @runner.data.call
+          block_returned = apply_modifiers(block_returned)
         }
         return block_returned
 
@@ -75,6 +130,7 @@ module ShellCommandable
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
+          block_returned = apply_modifiers(block_returned)
         }
         return block_returned
       end
@@ -171,8 +227,16 @@ module ShellCommandable
       @dynamic_subcommand = block
     end
 
+    def special_modifiers
+      @registered_special_modifiers ||= {}
+    end
+
     def modifiers
       @registered_modifiers ||= {}
+    end
+
+    def register_special_modifier(*names, &block)
+      names.each{|name| special_modifiers.merge!( name.to_s => block ) }
     end
 
     def register_modifier(*names, &block)
