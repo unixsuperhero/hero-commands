@@ -23,9 +23,12 @@ module ShellCommandable
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
       @original_args = args.clone
-      @subcommand_query = args.shift
+      @subcommand_query = args
 
       @subcommand = subcommand_matcher.match(subcommand_query)
+      if @subcommand
+        args.shift
+      end
 
       # ap(
       #   usable_args: @usable_args,
@@ -64,7 +67,7 @@ module ShellCommandable
       if @subcommand
         block_returned = nil
         hooks_returned = run_with_hooks{
-          block_returned = @subcommand.data.call(args)
+          block_returned = @subcommand.data.call
           block_returned = apply_modifiers(block_returned)
         }
         return block_returned
