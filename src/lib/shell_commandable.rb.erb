@@ -39,7 +39,7 @@ module ShellCommandable
       extract_special_modifiers
       extract_modifiers
 
-      ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
+      # ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
 
       if @subcommand.nil?
         if @no_subcommand.is_a?(Proc)
@@ -102,7 +102,8 @@ module ShellCommandable
         return block_returned
       end
 
-      puts format('Runner/handler not found for the "%s" subcommand', subcommand)
+      # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
+      print_subcommand_list
       exit 1
     end
 
