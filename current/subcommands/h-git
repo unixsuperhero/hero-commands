@@ -172,7 +172,7 @@ class GitSubcommand
 
   register_subcommand(:current_branch){
     Git.current_branch.tap{|br|
-      printf br unless has_modifiers?
+      printf br unless has_modifiers? || MainCommand.has_modifiers?
     }
   }
 
