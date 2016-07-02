@@ -320,7 +320,7 @@ module ShellCommandable
           args: args)
         block_returned = nil
         hooks_returned = run_with_hooks{
-          block_returned = @subcommand.call
+          block_returned = @subcommand.data.call
           block_returned = apply_modifiers(block_returned)
         }
         return block_returned
