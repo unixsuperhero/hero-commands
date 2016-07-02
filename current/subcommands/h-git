@@ -115,7 +115,6 @@ class Git
     end
 
     def current_branch
-      puts 'TESTING'
       `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
     end
 
@@ -167,12 +166,19 @@ class GitSubcommand
     }
   }
 
+  register_modifier(:@push) {|returned|
+    remote = args.first ? args.first : 'origin'
+    system('git', 'push', remote, returned)
+  }
+
   dynamic_subcommand {
-    HeroHelper.output_from('git', subcommand, *args)
+    HeroHelper.output_from('git', subcommand_arg, *args)
   }
 
   register_subcommand(:current_branch){
-    puts format("current branch: %s", Git.current_branch)
+    Git.current_branch.tap{|br|
+      printf br unless has_modifiers? || MainCommand.has_modifiers?
+    }
   }
 
   register_subcommand(:prefix){
@@ -350,18 +356,7 @@ class GitSubcommand
 
     exit 1 if branches.empty?
 
-    break branches
-    exit 0
-
-    # -------------
-
-    if args.empty?
-      puts branches
-      exit 0
-    end
-
-    puts branches.select{|b| b[Regexp.new(args.first, ?i)] }
-    exit 0
+    branches.tap{|b| puts b }
   }
 end
 

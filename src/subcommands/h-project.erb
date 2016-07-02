@@ -29,7 +29,18 @@ class ProjectSubcommand
   }}
 
   dynamic_subcommand{
-    ProjectHelper.tmux_session_for_project(subcommand)
+    ProjectHelper.tmux_session_for_project(subcommand_arg)
+  }
+
+  register_subcommand(:start) {
+    ProjectHelper.tmux_session_for_project(args.first)
+  }
+
+  register_subcommand(:for) {
+    args.each do |arg|
+      ap(project_for: arg,
+         matches: ProjectHelper.project_for(arg))
+    end
   }
 
   register_subcommand(:dirty) {

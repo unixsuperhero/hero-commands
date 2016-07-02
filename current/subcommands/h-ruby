@@ -12,7 +12,7 @@ class RubyTestSubcommand
 
   dynamic_subcommand{
     HeroHelper.run_inside_dir(experiment_dir) {
-      filenames = ([subcommand] + args).map{|a| a.sub(/(\.rb)?$/, '.rb') }
+      filenames = ([subcommand_arg] + args).map{|a| a.sub(/(\.rb)?$/, '.rb') }
       HeroHelper.edit_in_editor(*filenames)
     }
   }
