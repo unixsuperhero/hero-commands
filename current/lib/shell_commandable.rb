@@ -20,121 +20,8 @@ module ShellCommandable
       usable_args
     end
 
-    def route_args_and_process_command_v2
-      if @subcommand
-        ap(in: :@subcommand_block,
-          args: args)
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @subcommand.data.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      elsif @subcommand_arg && @dynamic_subcommand
-        ap(in: :@dynamic_subcommand_block,
-          args: args)
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @dynamic_subcommand.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      elsif @subcommand_arg.nil? && @no_subcommand
-        ap(in: :@no_subcommand_block,
-          args: args)
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @no_subcommand.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      else
-        ap(in: :@print_subcommand_list,
-          args: args)
-        print_subcommand_list
-        exit 1
-      end
-    end
-
-    # def old_route_args_and_process_command
-    #   # OLD VERSION
-
-    #   if @subcommand.nil?
-    #     if @no_subcommand.is_a?(Proc)
-    #       block_returned = nil
-    #       hooks_returned = run_with_hooks{
-    #         block_returned = @no_subcommand.call
-    #         block_returned = apply_modifiers(block_returned)
-    #       }
-    #       return block_returned
-    #     else
-    #       print_subcommand_list
-    #       exit 1
-    #     end
-    #   end
-
-    #   # if @subcommand.index(?:) && @subcommand.index(?:) > 0
-    #   #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
-    #   # end
-
-    #   # @runner = @subcommand # subcommand_matcher.match(@subcommand)
-
-    #   if @subcommand
-    #     block_returned = nil
-    #     hooks_returned = run_with_hooks{
-    #       block_returned = @subcommand.data.call
-    #       block_returned = apply_modifiers(block_returned)
-    #     }
-    #     return block_returned
-
-    #     # TODO: figure out how to pass specific args to a subcmd in the middle
-    #     #       of the chain...we could do something like subcmdname:value
-    #     #       so for example: h git branch:checkout feature.date.autoparser checkout:master
-    #     #
-    #     #       maybe instead of using just the subcmd arg to specify what is
-    #     #       chained in the same handler, use a separator that sits between
-    #     #       where one set of args end and next subcmd begins like '\;'
-    #     #       because it is escaped...it shouldn't interfere with bash or zsh
-    #     #       (and find uses it)
-    #     ## if @subcommand_chain
-    #     ##   if command_output
-    #     ##     if command_output.is_a?(Array)
-    #     ##       run([@subcommand_chain] + command_output)
-    #     ##     else
-    #     ##       run([@subcommand_chain, command_output])
-    #     ##     end
-    #     ##   else
-    #     ##     run([@subcommand_chain])
-    #     ##   end
-    #     ## end
-
-    #     exit 0
-    #   end
-
-    #   if @dynamic_subcommand
-    #     block_returned = nil
-    #     hooks_returned = run_with_hooks{
-    #       block_returned = @dynamic_subcommand.call
-    #       block_returned = apply_modifiers(block_returned)
-    #     }
-    #     return block_returned
-    #   end
-    # end
-
-    def run_info
-      {
-        in: self.name,
-        original_args: @original_args,
-        subcommand_arg: @subcommand_arg,
-        args: args,
-        usable_args: @usable_args,
-        matched_subcommand_name: @subcommand && @subcommand.name,
-        subcommand: @subcommand,
-        no_subcommand: @no_subcommand,
-        dynamic_subcommand: @dynamic_subcommand,
-        runner: runner,
-        runner_type: runner_type,
-      }
+    def args_without_modifiers
+      args.take_while{|arg| arg[0] != ?@ }
     end
 
     def run(passed_args=nil)
@@ -144,26 +31,7 @@ module ShellCommandable
 
       @subcommand = subcommand_matcher.match(subcommand_arg)
 
-      # ap(before: 'extract',
-      #    original_args: @original_args,
-      #    usable_args: @usable_args,
-      #    args: args,
-      #    subcmd_query: @subcommand_arg,
-      #    subcmd: @subcommand,
-      #    args_without_subcommand: @args_without_subcommand,
-      #    args_with_subcommand: @args_with_subcommand,
-      #   )
-
-      extract_special_modifiers
-      extract_modifiers
-
-      # ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
-
       route_args_and_process_command
-
-      # # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
-      # print_subcommand_list
-      # exit 1
     end
 
     def subcommand_proc
@@ -199,7 +67,7 @@ module ShellCommandable
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = runner.call
-          block_returned = apply_modifiers(block_returned)
+          block_returned = extract_and_apply_modifiers(block_returned)
         }
         return block_returned
       end
@@ -248,6 +116,9 @@ module ShellCommandable
 
         key = args[index]
         val = args[(index+1)..-1]
+        if MainCommand.applied_modifiers.include?(key)
+          next
+        end
         special_modifier_args.merge!(key => val)
 
         has_modifiers!
@@ -264,11 +135,22 @@ module ShellCommandable
         break mods if mods.empty?
 
         mods.each{|mod|
+          if MainCommand.applied_modifiers.include?(args.last)
+            args.pop
+            next
+          end
           modifier_args.unshift args.pop
         }
 
         has_modifiers!
       }
+    end
+
+    def extract_and_apply_modifiers(returned)
+      extract_special_modifiers
+      extract_modifiers
+
+      has_modifiers? ? apply_modifiers(returned) : returned
     end
 
     def apply_modifiers(returned)
@@ -379,11 +261,68 @@ module ShellCommandable
     end
 
     def special_modifiers
-      @registered_special_modifiers ||= {}
+      @registered_special_modifiers ||= {
+        "@each" => Proc.new{|returned,cmd|
+          break unless returned.is_a?(Array)
+          if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+            cmd.push '%s'
+          end
+          gsub = %r{(?<!\\)%s}i
+          cmd = cmd.map{|arg| arg.gsub(gsub, '%<arg>s') }
+          returned.map{|arg|
+            current_command = cmd.map{|item| format(item, arg: arg.shellescape) }
+            system(*current_command)
+          }
+        },
+
+        "@all" => Proc.new{|returned,cmd|
+          break unless returned.is_a?(Array)
+          if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
+            cmd.push '%s'
+          end
+          gsub = %r{(?<!\\)%s}i
+
+          to_add = returned.map(&:shellescape)
+          while cmdi = cmd.index('%s')
+            cmd[cmdi] = to_add
+            cmd = cmd.flatten
+          end
+
+          system(*cmd)
+        },
+      }
     end
 
     def modifiers
-      @registered_modifiers ||= {}
+      @registered_modifiers ||= {
+        "@vim" => Proc.new{|returned|
+          HeroHelper.edit_in_editor *returned.flatten
+        },
+
+        "@capture" => Proc.new{|returned|
+          tempfile = Tempfile.create('hero')
+
+          case returned
+          when String
+            IO.write(tempfile.path, returned)
+            HeroHelper.edit_in_editor(tempfile.path)
+          when Array
+            File.open(tempfile.path, 'w+') {|fd|
+              fd.puts returned
+            }
+            HeroHelper.edit_in_editor(tempfile.path)
+          else
+            puts format('Not sure how to capture a %s...', returned.class)
+          end
+
+          tempfile.delete
+          tempfile.close
+        },
+      }
+    end
+
+    def applied_modifiers
+      @applied_modifiers ||= []
     end
 
     def register_special_modifier(*names, &block)
