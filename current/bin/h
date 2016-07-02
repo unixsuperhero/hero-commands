@@ -415,6 +415,22 @@ module ShellCommandable
     #   end
     # end
 
+    def run_info
+      {
+        in: self.name,
+        original_args: @original_args,
+        subcommand_arg: @subcommand_arg,
+        args: args,
+        usable_args: @usable_args,
+        matched_subcommand_name: @subcommand && @subcommand.name,
+        subcommand: @subcommand,
+        no_subcommand: @no_subcommand,
+        dynamic_subcommand: @dynamic_subcommand,
+        runner: runner,
+        runner_type: runner_type,
+      }
+    end
+
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
       @original_args = args.clone
@@ -453,6 +469,14 @@ module ShellCommandable
         print_subcommand_list
         exit 1
       }
+    end
+
+    def runner_type(code=runner)
+      {}.tap{|types|
+        types.merge!(subcommand_proc.object_id => format('%s (%s)', :subcommand.inspect, @subcommand.name.to_sym.inspect)) if subcommand_proc
+        types.merge!(@dynamic_subcommand.object_id => :dynamic_subcommand) if @dynamic_subcommand
+        types.merge!(@no_subcommand.object_id => :no_subcommand) if subcommand_proc
+      }.fetch(code.object_id, :no_match_print_help_and_subcommand_list)
     end
 
     def runner
