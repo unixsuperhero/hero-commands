@@ -205,16 +205,20 @@ module ShellCommandable
       @modifier_args ||= []
     end
 
+    def check_if_has_modifiers
+      modifier_args.any? || special_modifier_args.any?
+    end
+
     def has_modifiers
-      @has_modifiers ||= false
+      @has_modifiers ||= check_if_has_modifiers
     end
 
     def has_modifiers!
-      @has_modifiers = true
+      @has_modifiers = check_if_has_modifiers
     end
 
     def has_modifiers?
-      @has_modifiers == true
+      has_modifiers == true
     end
 
     def extract_special_modifiers
@@ -222,11 +226,11 @@ module ShellCommandable
         index = args.index(mod.to_s)
         next if index.nil?
 
-        has_modifiers!
-
         key = args[index]
         val = args[(index+1)..-1]
         special_modifier_args.merge!(key => val)
+
+        has_modifiers!
 
         len = args[index..-1].length
         args.pop(len)
@@ -239,15 +243,17 @@ module ShellCommandable
       }.tap{|mods|
         break mods if mods.empty?
 
-        has_modifiers!
-
         mods.each{|mod|
           modifier_args.unshift args.pop
         }
+
+        has_modifiers!
       }
     end
 
     def apply_modifiers(returned)
+      return returned unless has_modifiers?
+
       if special_modifier_args.keys.any?
         returned = special_modifier_args.keys.inject(returned) do |retval,smod|
           cmd = special_modifier_args[smod]
