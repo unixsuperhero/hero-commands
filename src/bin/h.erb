@@ -28,107 +28,14 @@ class MainCommand
       args.shift
     end
 
-    # modified_with_special = special_modifier_args.keys.map{|arg|
-    #   index = args.index(arg)
-    #   next if index.nil?
-    #   left = args[0..(index - 1)]
-    #   right = args[(index + 1)..-1]
-    #   args = left
-    #   [arg, right]
-    # }.compact.to_h
-
-    # modified_with = args.reverse.take_while{|arg|
-    #   modifier_args.keys.include?(arg)
-    # }
-    # modified_with.length.times{ args.pop }
-
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
         returned = super
-        # modified_with_special.each{|arg,cmd|
-        #   puts
-        #   puts (header = 'Modified Output')
-        #   puts ?- * header.length
-        #   special_modifier_args[arg].call(returned, cmd)
-        # }
-
-        # modified_with.each{|arg|
-        #   puts
-        #   puts (header = 'Modified Output')
-        #   puts ?- * header.length
-        #   modifier_args[arg].call(returned)
-        # }
       }
     else
       returned = super
-      # modified_with_special.each{|arg,cmd|
-      #   puts
-      #   puts (header = 'Modified Output')
-      #   puts ?- * header.length
-      #   special_modifier_args[arg].call(returned, cmd)
-      # }
-
-      # modified_with.each{|arg|
-      #   puts
-      #   puts (header = 'Modified Output')
-      #   puts ?- * header.length
-      #   modifier_args[arg].call(returned)
-      # }
     end
   end
-
-  register_modifier(:@vim){|returned|
-    HeroHelper.edit_in_editor *returned.flatten
-  }
-
-  register_modifier(:@capture){|returned|
-    tempfile = Tempfile.create('hero')
-
-    case returned
-    when String
-      IO.write(tempfile.path, returned)
-      HeroHelper.edit_in_editor(tempfile.path)
-    when Array
-      File.open(tempfile.path, 'w+') {|fd|
-        fd.puts returned
-      }
-      HeroHelper.edit_in_editor(tempfile.path)
-    else
-      puts format('Not sure how to capture a %s...', returned.class)
-    end
-
-    tempfile.delete
-    tempfile.close
-  }
-
-  register_special_modifier(:@each){|returned,cmd|
-    break unless returned.is_a?(Array)
-    if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
-      cmd.push '%s'
-    end
-    gsub = %r{(?<!\\)%s}i
-    cmd = cmd.map{|arg| arg.gsub(gsub, '%<arg>s') }
-    returned.map{|arg|
-      current_command = cmd.map{|item| format(item, arg: arg.shellescape) }
-      system(*current_command)
-    }
-  }
-
-  register_special_modifier(:@all){|returned,cmd|
-    break unless returned.is_a?(Array)
-    if not cmd.any?{|arg| arg[/(?<!\\)%s/i] }
-      cmd.push '%s'
-    end
-    gsub = %r{(?<!\\)%s}i
-
-    to_add = returned.map(&:shellescape)
-    while cmdi = cmd.index('%s')
-      cmd[cmdi] = to_add
-      cmd = cmd.flatten
-    end
-
-    system(*cmd)
-  }
 
   def self.project_context?
     ! @project_context.nil?
@@ -167,8 +74,8 @@ class MainCommand
   }
 
   register_subcommand(:run) {
-    error_exit('Nothing to run...pass in cmd as arguments.') if args.empty?
-    puts HeroHelper.exec_from(*args)
+    error_exit('Nothing to run...pass in cmd as arguments.') if args_without_modifiers.empty?
+    puts HeroHelper.exec_from(*args_without_modifiers)
   }
 
   register_subcommand(:fix) {
