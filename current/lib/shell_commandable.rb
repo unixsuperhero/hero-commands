@@ -22,6 +22,7 @@ module ShellCommandable
 
     def route_args_and_process_command
       if @subcommand
+        ap(in: :@subcommand_block)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @subcommand.call
@@ -29,6 +30,7 @@ module ShellCommandable
         }
         return block_returned
       elsif @subcommand_arg && @dynamic_subcommand
+        ap(in: :@dynamic_subcommand_block)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
@@ -36,6 +38,7 @@ module ShellCommandable
         }
         return block_returned
       elsif @subcommand_arg.nil? && @no_subcommand
+        ap(in: :@no_subcommand_block)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @no_subcommand.call
@@ -43,75 +46,76 @@ module ShellCommandable
         }
         return block_returned
       else
+        ap(in: :@print_subcommand_list)
         print_subcommand_list
         exit 1
       end
     end
 
-    def old_route_args_and_process_command
-      # OLD VERSION
+    # def old_route_args_and_process_command
+    #   # OLD VERSION
 
-      if @subcommand.nil?
-        if @no_subcommand.is_a?(Proc)
-          block_returned = nil
-          hooks_returned = run_with_hooks{
-            block_returned = @no_subcommand.call
-            block_returned = apply_modifiers(block_returned)
-          }
-          return block_returned
-        else
-          print_subcommand_list
-          exit 1
-        end
-      end
+    #   if @subcommand.nil?
+    #     if @no_subcommand.is_a?(Proc)
+    #       block_returned = nil
+    #       hooks_returned = run_with_hooks{
+    #         block_returned = @no_subcommand.call
+    #         block_returned = apply_modifiers(block_returned)
+    #       }
+    #       return block_returned
+    #     else
+    #       print_subcommand_list
+    #       exit 1
+    #     end
+    #   end
 
-      # if @subcommand.index(?:) && @subcommand.index(?:) > 0
-      #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
-      # end
+    #   # if @subcommand.index(?:) && @subcommand.index(?:) > 0
+    #   #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
+    #   # end
 
-      # @runner = @subcommand # subcommand_matcher.match(@subcommand)
+    #   # @runner = @subcommand # subcommand_matcher.match(@subcommand)
 
-      if @subcommand
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @subcommand.data.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
+    #   if @subcommand
+    #     block_returned = nil
+    #     hooks_returned = run_with_hooks{
+    #       block_returned = @subcommand.data.call
+    #       block_returned = apply_modifiers(block_returned)
+    #     }
+    #     return block_returned
 
-        # TODO: figure out how to pass specific args to a subcmd in the middle
-        #       of the chain...we could do something like subcmdname:value
-        #       so for example: h git branch:checkout feature.date.autoparser checkout:master
-        #
-        #       maybe instead of using just the subcmd arg to specify what is
-        #       chained in the same handler, use a separator that sits between
-        #       where one set of args end and next subcmd begins like '\;'
-        #       because it is escaped...it shouldn't interfere with bash or zsh
-        #       (and find uses it)
-        ## if @subcommand_chain
-        ##   if command_output
-        ##     if command_output.is_a?(Array)
-        ##       run([@subcommand_chain] + command_output)
-        ##     else
-        ##       run([@subcommand_chain, command_output])
-        ##     end
-        ##   else
-        ##     run([@subcommand_chain])
-        ##   end
-        ## end
+    #     # TODO: figure out how to pass specific args to a subcmd in the middle
+    #     #       of the chain...we could do something like subcmdname:value
+    #     #       so for example: h git branch:checkout feature.date.autoparser checkout:master
+    #     #
+    #     #       maybe instead of using just the subcmd arg to specify what is
+    #     #       chained in the same handler, use a separator that sits between
+    #     #       where one set of args end and next subcmd begins like '\;'
+    #     #       because it is escaped...it shouldn't interfere with bash or zsh
+    #     #       (and find uses it)
+    #     ## if @subcommand_chain
+    #     ##   if command_output
+    #     ##     if command_output.is_a?(Array)
+    #     ##       run([@subcommand_chain] + command_output)
+    #     ##     else
+    #     ##       run([@subcommand_chain, command_output])
+    #     ##     end
+    #     ##   else
+    #     ##     run([@subcommand_chain])
+    #     ##   end
+    #     ## end
 
-        exit 0
-      end
+    #     exit 0
+    #   end
 
-      if @dynamic_subcommand
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @dynamic_subcommand.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      end
-    end
+    #   if @dynamic_subcommand
+    #     block_returned = nil
+    #     hooks_returned = run_with_hooks{
+    #       block_returned = @dynamic_subcommand.call
+    #       block_returned = apply_modifiers(block_returned)
+    #     }
+    #     return block_returned
+    #   end
+    # end
 
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
@@ -120,15 +124,15 @@ module ShellCommandable
 
       @subcommand = subcommand_matcher.match(subcommand_arg)
 
-      ap(before: 'extract',
-         original_args: @original_args,
-         usable_args: @usable_args,
-         args: args,
-         subcmd_query: @subcommand_arg,
-         subcmd: @subcommand,
-         args_without_subcommand: @args_without_subcommand,
-         args_with_subcommand: @args_with_subcommand,
-        )
+      # ap(before: 'extract',
+      #    original_args: @original_args,
+      #    usable_args: @usable_args,
+      #    args: args,
+      #    subcmd_query: @subcommand_arg,
+      #    subcmd: @subcommand,
+      #    args_without_subcommand: @args_without_subcommand,
+      #    args_with_subcommand: @args_with_subcommand,
+      #   )
 
       if @subcommand
         args.shift
