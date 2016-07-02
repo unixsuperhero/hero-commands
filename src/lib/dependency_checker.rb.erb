@@ -1,15 +1,15 @@
 class DependencyChecker
   class << self
     def brew(keg_name, display_name=nil)
-      matches = HProjectPathEnv.find(keg_name) || []
+      matches = PathEnv.find(keg_name) || []
       if matches.count == 0
         install_missing_brew_dependency(keg_name, display_name)
       end
-      return (HProjectPathEnv.find(keg_name) || []).count > 0
+      return (PathEnv.find(keg_name) || []).count > 0
     end
 
     def install_missing_brew_dependency(keg_name, display_name=nil)
-      if (HProjectPathEnv.find('brew') || []).count == 0
+      if (PathEnv.find('brew') || []).count == 0
         puts <<-MESSAGE
   Missing Dependency: #{display_name || keg_name}
 
