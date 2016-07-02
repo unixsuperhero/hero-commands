@@ -166,6 +166,11 @@ class GitSubcommand
     }
   }
 
+  register_modifier(:@push) {|returned|
+    remote = args.first ? args.first : 'origin'
+    system('git', 'push', remote, returned)
+  }
+
   dynamic_subcommand {
     HeroHelper.output_from('git', subcommand_arg, *args)
   }
