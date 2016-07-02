@@ -171,7 +171,16 @@ class GitSubcommand
   }
 
   register_subcommand(:current_branch){
-    puts format("%s", Git.current_branch)
+    Git.current_branch.tap{|br|
+      ap(branch: br,
+         in: self.name,
+         subcmd: subcommand,
+         args: args,
+         main_original_args: MainCommand.original_args,
+         main_subcommand: MainCommand.subcommand,
+         main_args: MainCommand.args,
+        )
+    }
   }
 
   register_subcommand(:prefix){
