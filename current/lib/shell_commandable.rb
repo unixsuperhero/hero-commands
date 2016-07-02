@@ -26,6 +26,17 @@ module ShellCommandable
       @subcommand_query = args
 
       @subcommand = subcommand_matcher.match(subcommand_query)
+
+      ap(before: 'extract',
+         original_args: @original_args,
+         usable_args: @usable_args,
+         args: args,
+         subcmd_query: @subcommand_query,
+         subcmd: @subcommand,
+         args_without_subcommand: @args_without_subcommand,
+         args_with_subcommand: @args_with_subcommand,
+        )
+
       if @subcommand
         args.shift
       end
@@ -41,6 +52,16 @@ module ShellCommandable
 
       extract_special_modifiers
       extract_modifiers
+
+      ap(after: 'extract',
+         original_args: @original_args,
+         usable_args: @usable_args,
+         args: args,
+         subcmd_query: @subcommand_query,
+         subcmd: @subcommand,
+         args_without_subcommand: @args_without_subcommand,
+         args_with_subcommand: @args_with_subcommand,
+        )
 
       # ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
 
