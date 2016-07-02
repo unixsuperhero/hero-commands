@@ -11,7 +11,6 @@ module ShellCommandable
     attr_accessor :original_args, :usable_args
     attr_accessor :args_with_subcommand, :args_without_subcommand
     attr_accessor :subcommand_arg
-    attr_accessor :run_path
 
     def args_with_subcommand
       [subcommand] + usable_args
@@ -22,7 +21,95 @@ module ShellCommandable
     end
 
     def route_args_and_process_command
+      if @subcommand
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @subcommand.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+      elsif @subcommand_arg && @dynamic_subcommand
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @dynamic_subcommand.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+      elsif @subcommand_arg.nil? && @no_subcommand
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @no_subcommand.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+      else
+        print_subcommand_list
+        exit 1
+      end
+    end
+
+    def old_route_args_and_process_command
+      # OLD VERSION
+
       if @subcommand.nil?
+        if @no_subcommand.is_a?(Proc)
+          block_returned = nil
+          hooks_returned = run_with_hooks{
+            block_returned = @no_subcommand.call
+            block_returned = apply_modifiers(block_returned)
+          }
+          return block_returned
+        else
+          print_subcommand_list
+          exit 1
+        end
+      end
+
+      # if @subcommand.index(?:) && @subcommand.index(?:) > 0
+      #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
+      # end
+
+      # @runner = @subcommand # subcommand_matcher.match(@subcommand)
+
+      if @subcommand
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @subcommand.data.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+
+        # TODO: figure out how to pass specific args to a subcmd in the middle
+        #       of the chain...we could do something like subcmdname:value
+        #       so for example: h git branch:checkout feature.date.autoparser checkout:master
+        #
+        #       maybe instead of using just the subcmd arg to specify what is
+        #       chained in the same handler, use a separator that sits between
+        #       where one set of args end and next subcmd begins like '\;'
+        #       because it is escaped...it shouldn't interfere with bash or zsh
+        #       (and find uses it)
+        ## if @subcommand_chain
+        ##   if command_output
+        ##     if command_output.is_a?(Array)
+        ##       run([@subcommand_chain] + command_output)
+        ##     else
+        ##       run([@subcommand_chain, command_output])
+        ##     end
+        ##   else
+        ##     run([@subcommand_chain])
+        ##   end
+        ## end
+
+        exit 0
+      end
+
+      if @dynamic_subcommand
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = @dynamic_subcommand.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
       end
     end
 
@@ -54,49 +141,9 @@ module ShellCommandable
 
       route_args_and_process_command
 
-      ## if @subcommand.nil?
-      ##   if @no_subcommand.is_a?(Proc)
-      ##     block_returned = nil
-      ##     hooks_returned = run_with_hooks{
-      ##       block_returned = @no_subcommand.call
-      ##       block_returned = apply_modifiers(block_returned)
-      ##     }
-      ##     return block_returned
-      ##   else
-      ##     print_subcommand_list
-      ##     exit 1
-      ##   end
-      ## end
-
-      # if @subcommand.index(?:) && @subcommand.index(?:) > 0
-      #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
-      # end
-
-      # @runner = @subcommand # subcommand_matcher.match(@subcommand)
-
-      ## if @subcommand
-      ##   block_returned = nil
-      ##   hooks_returned = run_with_hooks{
-      ##     block_returned = @subcommand.data.call
-      ##     block_returned = apply_modifiers(block_returned)
-      ##   }
-      ##   return block_returned
-
-      ##   exit 0
-      ## end
-
-      ## if @dynamic_subcommand
-      ##   block_returned = nil
-      ##   hooks_returned = run_with_hooks{
-      ##     block_returned = @dynamic_subcommand.call
-      ##     block_returned = apply_modifiers(block_returned)
-      ##   }
-      ##   return block_returned
-      ## end
-
-      # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
-      print_subcommand_list
-      exit 1
+      # # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
+      # print_subcommand_list
+      # exit 1
     end
 
     def let_blocks
