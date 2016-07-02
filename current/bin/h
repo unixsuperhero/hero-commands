@@ -317,7 +317,7 @@ module ShellCommandable
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
       @original_args = args.clone
-      @subcommand_query = args
+      @subcommand_query = args.first
 
       @subcommand = subcommand_matcher.match(subcommand_query)
 
