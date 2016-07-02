@@ -304,7 +304,8 @@ module ShellCommandable
 
     attr_accessor :original_args, :usable_args
     attr_accessor :args_with_subcommand, :args_without_subcommand
-    attr_accessor :subcommand_query
+    attr_accessor :subcommand_arg
+    attr_accessor :run_path
 
     def args_with_subcommand
       [subcommand] + usable_args
@@ -314,18 +315,23 @@ module ShellCommandable
       usable_args
     end
 
+    def route_args_and_process_command
+      if @subcommand.nil?
+      end
+    end
+
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
       @original_args = args.clone
-      @subcommand_query = args.first
+      @subcommand_arg = args.first
 
-      @subcommand = subcommand_matcher.match(subcommand_query)
+      @subcommand = subcommand_matcher.match(subcommand_arg)
 
       ap(before: 'extract',
          original_args: @original_args,
          usable_args: @usable_args,
          args: args,
-         subcmd_query: @subcommand_query,
+         subcmd_query: @subcommand_arg,
          subcmd: @subcommand,
          args_without_subcommand: @args_without_subcommand,
          args_with_subcommand: @args_with_subcommand,
@@ -335,43 +341,26 @@ module ShellCommandable
         args.shift
       end
 
-      # ap(
-      #   usable_args: @usable_args,
-      #   original_args: @original_args,
-      #   subcommand_query: @subcommand_query,
-      #   args_without_subcommand: @args_without_subcommand,
-      #   args_with_subcommand: @args_with_subcommand,
-      #   subcommand: @subcommand,
-      # )
-
       extract_special_modifiers
       extract_modifiers
 
-      ap(after: 'extract',
-         original_args: @original_args,
-         usable_args: @usable_args,
-         args: args,
-         subcmd_query: @subcommand_query,
-         subcmd: @subcommand,
-         args_without_subcommand: @args_without_subcommand,
-         args_with_subcommand: @args_with_subcommand,
-        )
-
       # ap(in: self.name, args: args, subcommand_name: @subcommand && @subcommand.name, has_modifiers?: has_modifiers?)
 
-      if @subcommand.nil?
-        if @no_subcommand.is_a?(Proc)
-          block_returned = nil
-          hooks_returned = run_with_hooks{
-            block_returned = @no_subcommand.call
-            block_returned = apply_modifiers(block_returned)
-          }
-          return block_returned
-        else
-          print_subcommand_list
-          exit 1
-        end
-      end
+      route_args_and_process_command
+
+      ## if @subcommand.nil?
+      ##   if @no_subcommand.is_a?(Proc)
+      ##     block_returned = nil
+      ##     hooks_returned = run_with_hooks{
+      ##       block_returned = @no_subcommand.call
+      ##       block_returned = apply_modifiers(block_returned)
+      ##     }
+      ##     return block_returned
+      ##   else
+      ##     print_subcommand_list
+      ##     exit 1
+      ##   end
+      ## end
 
       # if @subcommand.index(?:) && @subcommand.index(?:) > 0
       #   @subcommand, @subcommand_chain = @subcommand.split(?:, 2)
@@ -379,46 +368,25 @@ module ShellCommandable
 
       # @runner = @subcommand # subcommand_matcher.match(@subcommand)
 
-      if @subcommand
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @subcommand.data.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
+      ## if @subcommand
+      ##   block_returned = nil
+      ##   hooks_returned = run_with_hooks{
+      ##     block_returned = @subcommand.data.call
+      ##     block_returned = apply_modifiers(block_returned)
+      ##   }
+      ##   return block_returned
 
-        # TODO: figure out how to pass specific args to a subcmd in the middle
-        #       of the chain...we could do something like subcmdname:value
-        #       so for example: h git branch:checkout feature.date.autoparser checkout:master
-        #
-        #       maybe instead of using just the subcmd arg to specify what is
-        #       chained in the same handler, use a separator that sits between
-        #       where one set of args end and next subcmd begins like '\;'
-        #       because it is escaped...it shouldn't interfere with bash or zsh
-        #       (and find uses it)
-        ## if @subcommand_chain
-        ##   if command_output
-        ##     if command_output.is_a?(Array)
-        ##       run([@subcommand_chain] + command_output)
-        ##     else
-        ##       run([@subcommand_chain, command_output])
-        ##     end
-        ##   else
-        ##     run([@subcommand_chain])
-        ##   end
-        ## end
+      ##   exit 0
+      ## end
 
-        exit 0
-      end
-
-      if @dynamic_subcommand
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = @dynamic_subcommand.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      end
+      ## if @dynamic_subcommand
+      ##   block_returned = nil
+      ##   hooks_returned = run_with_hooks{
+      ##     block_returned = @dynamic_subcommand.call
+      ##     block_returned = apply_modifiers(block_returned)
+      ##   }
+      ##   return block_returned
+      ## end
 
       # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
       print_subcommand_list

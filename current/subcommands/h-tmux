@@ -3,7 +3,7 @@ class TmuxSubcommand
   include ShellCommandable
 
   dynamic_subcommand{
-    HeroHelper.exec_from(*args.unshift(subcommand).unshift('tmux'))
+    HeroHelper.exec_from(*args.unshift(subcommand_arg).unshift('tmux'))
   }
 
   register_subcommand(:pry) {
