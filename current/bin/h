@@ -489,6 +489,8 @@ module ShellCommandable
     end
 
     def route_args_and_process_command
+      ap(me: run_info, main_command: MainCommand.run_info, same?: run_info == MainCommand.run_info)
+
       if runner
         block_returned = nil
         hooks_returned = run_with_hooks{
