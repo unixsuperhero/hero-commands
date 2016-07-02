@@ -20,40 +20,6 @@ module ShellCommandable
       usable_args
     end
 
-    def subcommand_proc
-      @subcommand.data if @subcommand
-    end
-
-    def no_runner_proc
-      Proc.new{
-        print_subcommand_list
-        exit 1
-      }
-    end
-
-    def runner
-      @runner ||= Proc.new{
-        match   = subcommand_proc
-        match ||= @dynamic_subcommand if @subcommand_arg
-        match ||= @no_subcommand unless @subcommand_arg
-        match || no_runner_proc
-      }.call
-    end
-
-    def route_args_and_process_command
-      if runner
-        block_returned = nil
-        hooks_returned = run_with_hooks{
-          block_returned = runner.call
-          block_returned = apply_modifiers(block_returned)
-        }
-        return block_returned
-      end
-
-      puts "Cannot figure out what to do..."
-      exit 1
-    end
-
     def route_args_and_process_command_v2
       if @subcommand
         ap(in: :@subcommand_block,
@@ -158,7 +124,7 @@ module ShellCommandable
     def run(passed_args=nil)
       @usable_args = passed_args if passed_args
       @original_args = args.clone
-      @subcommand_arg = args.first
+      @subcommand_arg = args.shift
 
       @subcommand = subcommand_matcher.match(subcommand_arg)
 
@@ -172,10 +138,6 @@ module ShellCommandable
       #    args_with_subcommand: @args_with_subcommand,
       #   )
 
-      if @subcommand
-        args.shift
-      end
-
       extract_special_modifiers
       extract_modifiers
 
@@ -186,6 +148,40 @@ module ShellCommandable
       # # puts format('Runner/handler not found for the "%s" subcommand', subcommand)
       # print_subcommand_list
       # exit 1
+    end
+
+    def subcommand_proc
+      @subcommand.data if @subcommand
+    end
+
+    def no_runner_proc
+      Proc.new{
+        print_subcommand_list
+        exit 1
+      }
+    end
+
+    def runner
+      @runner ||= Proc.new{
+        match   = subcommand_proc
+        match ||= @dynamic_subcommand if @subcommand_arg
+        match ||= @no_subcommand unless @subcommand_arg
+        match || no_runner_proc
+      }.call
+    end
+
+    def route_args_and_process_command
+      if runner
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = runner.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+      end
+
+      puts "Cannot figure out what to do..."
+      exit 1
     end
 
     def let_blocks
