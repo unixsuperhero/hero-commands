@@ -29,7 +29,7 @@ class ProjectSubcommand
   }}
 
   dynamic_subcommand{
-    ProjectHelper.tmux_session_for_project(subcommand)
+    ProjectHelper.tmux_session_for_project(subcommand_arg)
   }
 
   register_subcommand(:dirty) {

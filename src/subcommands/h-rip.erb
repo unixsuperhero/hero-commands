@@ -12,14 +12,14 @@ class RipSubcommand
   end
 
   dynamic_subcommand{
-    plugin = ripper_plugin(subcommand)
+    plugin = ripper_plugin(subcommand_arg)
 
     unless plugin
-      puts format('No Plugin Found for: "%s"', subcommand)
+      puts format('No Plugin Found for: "%s"', subcommand_arg)
       exit 1
     end
 
-    plugin_args = args.unshift(subcommand)
+    plugin_args = args.unshift(subcommand_arg)
     while plugin_args[0].is_a?(String)
       url = plugin.run(*plugin_args)
       plugin_args[0] = url
