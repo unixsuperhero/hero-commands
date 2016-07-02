@@ -22,7 +22,8 @@ module ShellCommandable
 
     def route_args_and_process_command
       if @subcommand
-        ap(in: :@subcommand_block)
+        ap(in: :@subcommand_block,
+          args: args)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @subcommand.call
@@ -30,7 +31,8 @@ module ShellCommandable
         }
         return block_returned
       elsif @subcommand_arg && @dynamic_subcommand
-        ap(in: :@dynamic_subcommand_block)
+        ap(in: :@dynamic_subcommand_block,
+          args: args)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @dynamic_subcommand.call
@@ -38,7 +40,8 @@ module ShellCommandable
         }
         return block_returned
       elsif @subcommand_arg.nil? && @no_subcommand
-        ap(in: :@no_subcommand_block)
+        ap(in: :@no_subcommand_block,
+          args: args)
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = @no_subcommand.call
@@ -46,7 +49,8 @@ module ShellCommandable
         }
         return block_returned
       else
-        ap(in: :@print_subcommand_list)
+        ap(in: :@print_subcommand_list,
+          args: args)
         print_subcommand_list
         exit 1
       end
