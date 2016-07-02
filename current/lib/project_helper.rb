@@ -418,6 +418,18 @@ end
 
 class ProjectHelper
   class << self
+    def projects
+      config.data
+    end
+
+    def project_names
+      config.data.keys
+    end
+
+    def project_dirs
+      config.data.values
+    end
+
     def project_for(partial)
       partial = partial[1..-1] if partial[0] == ?@
       project_matcher.match(partial).tap{|proj|
@@ -460,21 +472,9 @@ class ProjectHelper
       project_for(partial).is_a?(Value)
     end
 
-    def project_names
-      config.data.keys
-    end
-
-    def projects
-      config.data
-    end
-
     def dir_for(project_partial)
       m = project_for(project_partial)
       m.data if m
-    end
-
-    def dirs
-      config.data.values
     end
 
     def tmux_session_for_project(project_name)
