@@ -20,7 +20,41 @@ module ShellCommandable
       usable_args
     end
 
+    def subcommand_proc
+      @subcommand.data if @subcommand
+    end
+
+    def no_runner_proc
+      Proc.new{
+        print_subcommand_list
+        exit 1
+      }
+    end
+
+    def runner
+      @runner ||= Proc.new{
+        match   = subcommand_proc
+        match ||= @dynamic_subcommand if @subcommand_arg
+        match ||= @no_subcommand unless @subcommand_arg
+        match || no_runner_proc
+      }.call
+    end
+
     def route_args_and_process_command
+      if runner
+        block_returned = nil
+        hooks_returned = run_with_hooks{
+          block_returned = runner.call
+          block_returned = apply_modifiers(block_returned)
+        }
+        return block_returned
+      end
+
+      puts "Cannot figure out what to do..."
+      exit 1
+    end
+
+    def route_args_and_process_command_v2
       if @subcommand
         ap(in: :@subcommand_block,
           args: args)
@@ -289,7 +323,7 @@ module ShellCommandable
     def fallback_runner
       @fallback_runner ||= Proc.new do
         puts <<-MESSAGE.lines.map{|l| l.chomp.sub(/^\s{10}/, '') }
-          No handler for the "#{subcommand.inspect}" subcommand.
+          No handler for the "#{subcommand_arg.inspect}" subcommand.
 
           These are the possible subcommands:
             #{subcommand_matcher.syntax.values.join("\n  ")}
