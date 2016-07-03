@@ -503,7 +503,7 @@ class ArgumentHelper
   class << self
     attr_reader :original_args
     attr_accessor :project_arg, :project
-    attr_accessor :all_args, :args, :modifiers
+    attr_accessor :all_args, :args, :modifier_args
     attr_accessor :order, :applied_modifiers
 
     def init(list=ARGV.clone)
@@ -518,12 +518,26 @@ class ArgumentHelper
 
       @all_args = list
       @args = list.take_while{|arg| arg[0] != ?@ }
-      @modifiers = list.drop_while{|arg| arg[0] != ?@ }
+      @modifier_args = list.drop_while{|arg| arg[0] != ?@ }
 
       @order = []
       @applied_modifiers = []
 
       from(args)
+    end
+
+    def modifiers
+      return [] if @modifier_args.nil? || @modifier_args.empty?
+
+      @modifiers ||= @modifier_args.inject([]){|list,arg|
+        if arg[0] == ?@
+          list.push [arg, []]
+        else
+          current = list.pop
+          current.last.push arg
+          list.push current
+        end
+      }
     end
 
     def from(list=ARGV.clone)
@@ -731,6 +745,131 @@ end
 
 # vim: ft=ruby
 
+class ProcessList
+  class ProcessInfo < Value; end
+
+  class << self
+    def list
+      @list ||= []
+    end
+
+    def running
+      @running ||= []
+    end
+
+    def current
+      @current = running[-1]
+    end
+
+    def finished
+      @finished ||= []
+    end
+
+    def add(opts={})
+      opts.merge! id: list.length, status: :running
+      new_process = ProcessInfo.new(opts)
+      list.push new_process
+      running.push new_process
+    end
+
+    def update(opts={})
+      current.update(opts)
+    end
+
+    def finalize(return_value=nil)
+      finalized_process = ProcessFinalizer.finalize(current, return_value)
+      finalized_process.return_value.tap{|retval|
+        current.update(modified_return_value: retval,
+                         # finalized_process.info.return_value,
+                       status: :finished)
+      }
+    end
+
+    def finish!
+      finished.push running.pop
+    end
+  end
+
+  class ProcessFinalizer
+    class << self
+      def finalize(info, return_value)
+        new(info, return_value).tap(&:finalize)
+      end
+    end
+
+    attr_accessor :info, :return_value
+    attr_reader :object
+    def initialize(info, return_value)
+      @info, @return_value = info, return_value
+      @object = info.object
+    end
+
+    def finalize
+      info.update(
+        return_value: return_value,
+        status: :finalizing,
+      )
+
+      process_modifiers
+      process_special_modifiers
+
+      @info.update(return_value: @return_value)
+    end
+
+    def process_modifiers
+      found = object.modifiers.map{|mod,block|
+        args = ArgumentHelper.modifiers.map(&:first)
+        index = args.rindex(mod)
+        next if index.nil?
+
+        arg_name, opts = arg_info = ArgumentHelper.modifiers.delete_at(index)
+        [
+          mod,
+          Value.new(
+            name: mod,
+            block: block,
+            info: arg_info,
+            arg_name: arg_name,
+            opts: opts,
+          )
+        ]
+      }.compact.to_h
+
+      @return_value = found.inject(@return_value){|retval,(name,handler)|
+        handler.block.call(retval,*handler.opts)
+      }
+      @info.update(return_value: @return_value)
+      @return_value
+    end
+
+    def process_special_modifiers
+      found = object.special_modifiers.map{|mod,block|
+        args = ArgumentHelper.modifiers.map(&:first)
+        index = args.rindex(mod)
+        next if index.nil?
+
+        arg_name, opts = arg_info = ArgumentHelper.modifiers.delete_at(index)
+        [
+          mod,
+          Value.new(
+            name: mod,
+            block: block,
+            info: arg_info,
+            arg_name: arg_name,
+            opts: opts,
+          )
+        ]
+      }.compact.to_h
+
+      @return_value = found.inject(@return_value){|retval,(name,handler)|
+        handler.block.call(retval, opts)
+      }
+      @info.update(return_value: @return_value)
+      @return_value
+    end
+  end
+end
+
 
 module ShellCommandable
   def self.included(base)
@@ -823,12 +962,25 @@ module ShellCommandable
     end
 
     def route_args_and_process_command
+      ProcessList.add(
+        object: self,
+        runner_type: runner_type,
+        runner: runner,
+        arg_manager: arg_manager,
+        modifiers: modifiers,
+        special_modifiers: special_modifiers,
+      )
+
       if runner
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = runner.call
-          block_returned = extract_and_apply_modifiers(block_returned)
+          ProcessList.update(return_value: block_returned)
+          block_returned = ProcessList.finalize(block_returned)
+          # block_returned = extract_and_apply_modifiers(block_returned)
         }
+        ProcessList.update(hooks_return_value: hooks_returned)
+        ProcessList.finish!
         return block_returned
       end
 
