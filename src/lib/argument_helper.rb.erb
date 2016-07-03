@@ -9,7 +9,7 @@ class ArgumentHelper
   class << self
     attr_reader :original_args
     attr_accessor :project_arg, :project
-    attr_accessor :all_args, :args, :modifiers
+    attr_accessor :all_args, :args, :modifier_args
     attr_accessor :order, :applied_modifiers
 
     def init(list=ARGV.clone)
@@ -24,12 +24,26 @@ class ArgumentHelper
 
       @all_args = list
       @args = list.take_while{|arg| arg[0] != ?@ }
-      @modifiers = list.drop_while{|arg| arg[0] != ?@ }
+      @modifier_args = list.drop_while{|arg| arg[0] != ?@ }
 
       @order = []
       @applied_modifiers = []
 
       from(args)
+    end
+
+    def modifiers
+      return [] if @modifier_args.nil? || @modifier_args.empty?
+
+      @modifiers ||= @modifier_args.inject([]){|list,arg|
+        if arg[0] == ?@
+          list.push [arg, []]
+        else
+          current = list.pop
+          current.last.push arg
+          list.push current
+        end
+      }
     end
 
     def from(list=ARGV.clone)

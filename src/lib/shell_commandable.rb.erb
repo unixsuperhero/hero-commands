@@ -4,6 +4,7 @@
     'src/lib/argument_helper.rb.erb',
     'src/lib/project_helper.rb.erb',
     'src/lib/hero_helper.rb.erb',
+    'src/lib/process_list.rb.erb',
   )
 %>
 
@@ -98,12 +99,25 @@ module ShellCommandable
     end
 
     def route_args_and_process_command
+      ProcessList.add(
+        object: self,
+        runner_type: runner_type,
+        runner: runner,
+        arg_manager: arg_manager,
+        modifiers: modifiers,
+        special_modifiers: special_modifiers,
+      )
+
       if runner
         block_returned = nil
         hooks_returned = run_with_hooks{
           block_returned = runner.call
-          block_returned = extract_and_apply_modifiers(block_returned)
+          ProcessList.update(return_value: block_returned)
+          block_returned = ProcessList.finalize(block_returned)
+          # block_returned = extract_and_apply_modifiers(block_returned)
         }
+        ProcessList.update(hooks_return_value: hooks_returned)
+        ProcessList.finish!
         return block_returned
       end
 
