@@ -7,13 +7,13 @@ require 'shell'
 
 <%=
   inject_files(
+    'src/lib/argument_helper.rb.erb',
     'src/lib/hash_ext.rb.erb',
     'src/lib/config.rb.erb',
     'src/lib/value.rb.erb',
     'src/lib/name_matcher.rb.erb',
     'src/lib/shell_commandable.rb.erb',
     'src/lib/path_env.rb.erb',
-    'src/lib/project_helper.rb.erb',
     'src/lib/list_filter.rb.erb',
     'src/lib/hero_helper.rb.erb'
   )
@@ -22,18 +22,16 @@ require 'shell'
 class MainCommand
   include ShellCommandable
 
-  def self.run(args=argv)
-    if args.first && args.first[0] == ?@
-      @project_context = ProjectHelper.project_for(args.first)
-      args.shift
-    end
+  def self.run(args=ARGV.clone)
+    arg_manager = ArgumentHelper.init(args)
+    @project_context = arg_manager.project
 
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
-        returned = super
+        returned = super(arg_manager)
       }
     else
-      returned = super
+      returned = super(arg_manager)
     end
   end
 

@@ -1,0 +1,66 @@
+
+<%=
+  inject_files(
+    'src/lib/project_helper.rb.erb',
+  )
+%>
+
+class ArgumentHelper
+  class << self
+    attr_reader :original_args
+    attr_accessor :project_arg, :project
+    attr_accessor :all_args, :args, :modifiers
+    attr_accessor :order, :applied_modifiers
+
+    def init(list=ARGV.clone)
+      return from(list) if @original_args
+
+      @original_args = list.clone
+
+      if list.first && list.first[0] == ?@
+        @project = ProjectHelper.project_for(list.first)
+        @project_arg = list.shift if @project
+      end
+
+      @all_args = list
+      @args = list.take_while{|arg| arg[0] != ?@ }
+      @modifiers = list.drop_while{|arg| arg[0] != ?@ }
+
+      @order = []
+      @applied_modifiers = []
+
+      from(args)
+    end
+
+    def from(list=ARGV.clone)
+      if @original_args.nil?
+        init(list)
+      else
+        new(list)
+      end
+    end
+
+    def next
+      if order.empty?
+        init
+      else
+        order.last.next
+      end
+    end
+  end
+
+  attr_accessor :originals
+  attr_accessor :subcommand
+  attr_accessor :all_args, :args
+
+  def initialize(list=ARGV.clone)
+    @originals = list.clone
+    @all_args = list.clone
+    @subcommand = list.shift
+    @args = list
+  end
+
+  def next
+    @next_manager ||= from(args)
+  end
+end

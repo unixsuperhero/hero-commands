@@ -1,4 +1,12 @@
 
+<%=
+  inject_files(
+    'src/lib/argument_helper.rb.erb',
+    'src/lib/project_helper.rb.erb',
+    'src/lib/hero_helper.rb.erb',
+  )
+%>
+
 module ShellCommandable
   def self.included(base)
     base.extend(ClassMethods)
@@ -8,6 +16,7 @@ module ShellCommandable
     attr_accessor :subcommand, :subcommand_chain
     attr_accessor :let_blocks
 
+    attr_accessor :arg_manager, :all_args, :modifier_args
     attr_accessor :original_args, :usable_args
     attr_accessor :args_with_subcommand, :args_without_subcommand
     attr_accessor :subcommand_arg
@@ -24,12 +33,38 @@ module ShellCommandable
       args.take_while{|arg| arg[0] != ?@ }
     end
 
-    def run(passed_args=nil)
-      @usable_args = passed_args if passed_args
-      @original_args = args.clone
-      @subcommand_arg = args.shift
+    def arg_manager
+      @arg_manager
+    end
 
-      @subcommand = subcommand_matcher.match(subcommand_arg)
+    def args
+      arg_manager.args
+    end
+
+    def next_arg_manager
+      @next_arg_manager ||= arg_manager.next
+    end
+
+    def run(arg_mgr=nil)
+      if arg_mgr.is_a?(ArgumentHelper)
+        @arg_manager = arg_mgr
+      elsif arg_mgr
+        @arg_manager = ArgumentHelper.from(arg_mgr)
+      else
+        @arg_manager = ArgumentHelper.next
+      end
+
+      ArgumentHelper.order.push(Value.new(name: self.name, klass: self, data: @arg_manager, manager: @arg_manager, args: @arg_manager.args))
+      # @arg_manager = ArgManager.setup(passed_args)
+
+      # @all_args = passed_args
+      # @all_args ||= ARGV.clone
+      # @usable_args = @all_args.take_while{|arg| arg[0] != ?@ }
+      # @modifier_args = @all_args.drop_while{|arg| arg[0] != ?@ }
+      # @original_args = @all_args
+      @subcommand_arg = arg_manager.subcommand
+
+      @subcommand = subcommand_matcher.match(@subcommand_arg)
 
       route_args_and_process_command
     end
@@ -206,14 +241,6 @@ module ShellCommandable
         name,dir = possible_projects.max_by{|name,dir| dir.length }
         ProjectHelper.project_for(name)
       }.call
-    end
-
-    def args
-      @usable_args ||= ARGV.clone
-    end
-
-    def argv
-      @args ||= ARGV.clone
     end
 
     def subcommand_matcher
