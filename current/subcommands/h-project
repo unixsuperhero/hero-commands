@@ -109,8 +109,12 @@ class ProjectSubcommand
     all_info = project_matcher.info
     max_usage_len = all_info.values.map(&:usage).max_by(&:length).length
     fmt = ' %s => %s'
-    all_info.each{|name,info|
-      puts format(' %s => %s', info.usage.rjust(max_usage_len), info.data)
+    all_info.map{|name,info|
+      format(' %s => %s', info.usage.rjust(max_usage_len), info.data)
+    }.tap{|retval|
+      unless has_modifiers?
+        puts retval
+      end
     }
   }
 
