@@ -554,6 +554,6 @@ class ArgumentHelper
   end
 
   def next
-    @next_manager ||= from(args)
+    @next_manager ||= self.class.from(args)
   end
 end
