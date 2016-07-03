@@ -537,7 +537,7 @@ class ArgumentHelper
       if order.empty?
         init
       else
-        order.last.next
+        order.last.manager.next
       end
     end
   end
