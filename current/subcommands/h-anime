@@ -78,7 +78,7 @@ class AnimeSubcommand
 
   register_subcommand(:organize){
     HeroHelper.run_inside_dir(downloads_dir) {
-      FindPatternsInFilenames.run #(arg_manager.args)
+      FindPatternsInFilenames.run('.', downloads_dir) #(arg_manager.args)
     }
     # exit 0
     # organize new/unsorted episodes into their series' subfolder
@@ -226,11 +226,11 @@ module FindPatternsInFilenames
   def run(args=ARGV.clone, inp=$stdin, out=$stdout)
     @args, @stdinput, @stdoutput = args, inp, out
 
-    parse_options
+    # parse_options
 
-    if options.show_help
-      return args.options
-    end
+    # if options.show_help
+    #   return args.options
+    # end
 
     subdir = args.shift
     basedir = args.shift
@@ -240,13 +240,13 @@ module FindPatternsInFilenames
     parser.edit_script
   end
 
-  def parse_options
-    args.options { |opts|
-      opts.on('-h', '--help', 'print this message') do
-        options.show_help = true
-      end
-    }.parse!
-  end
+  # def parse_options
+  #   args.options { |opts|
+  #     opts.on('-h', '--help', 'print this message') do
+  #       options.show_help = true
+  #     end
+  #   }.parse!
+  # end
 
   def options
     @options ||= OpenStruct.new.tap do |opts|
