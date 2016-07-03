@@ -78,7 +78,7 @@ class AnimeSubcommand
 
   register_subcommand(:organize){
     HeroHelper.run_inside_dir(downloads_dir) {
-      FindPatternsInFilenames.run(ArgumentHelper.order.last.manager.args)
+      FindPatternsInFilenames.run #(arg_manager.args)
     }
     # exit 0
     # organize new/unsorted episodes into their series' subfolder
