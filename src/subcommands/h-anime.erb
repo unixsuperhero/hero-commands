@@ -203,7 +203,7 @@ class AnimeSubcommand
 end
 
 MainCommand.register_subcommand(:anime) {
-  AnimeSubcommand.run(MainCommand.args)
+  AnimeSubcommand.run
 }
 
 class FilenameToGrepConverter

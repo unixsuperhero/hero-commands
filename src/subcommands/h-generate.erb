@@ -32,7 +32,7 @@ class %<classified>sSubcommand
 end
 
 MainCommand.register_subcommand(:%<underscored>s) {
-  %<classified>sSubcommand.run(MainCommand.args)
+  %<classified>sSubcommand.run
 }
 
 # vim: ft=ruby
@@ -83,7 +83,7 @@ MainCommand.register_subcommand(:%<underscored>s) {
 end
 
 MainCommand.register_subcommand(:generate) {
-  GenerateSubcommand.run(MainCommand.args)
+  GenerateSubcommand.run
 }
 
 # vim: ft=ruby

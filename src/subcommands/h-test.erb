@@ -30,7 +30,7 @@ class TestSubcommand
 end
 
 MainCommand.register_subcommand(:test) {
-  TestSubcommand.run(MainCommand.args)
+  TestSubcommand.run
 }
 
 # vim: ft=ruby
