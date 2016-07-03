@@ -24,7 +24,7 @@ class MainCommand
 
   def self.run(args=ARGV.clone)
     arg_manager = ArgumentHelper.init(args)
-    @project_context = arg_manager.project
+    @project_context = ArgumentHelper.project
 
     if project_context?
       HeroHelper.run_inside_dir(project_dir){
