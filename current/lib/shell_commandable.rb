@@ -1210,7 +1210,7 @@ module ShellCommandable
           when String
             IO.write(tempfile.path, returned)
             HeroHelper.edit_in_editor(tempfile.path)
-          when Array
+          when Array, Hash
             File.open(tempfile.path, 'w+') {|fd|
               fd.puts returned
             }
