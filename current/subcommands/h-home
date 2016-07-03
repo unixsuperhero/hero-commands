@@ -3,7 +3,7 @@
 # end
 
 # MainCommand.register_subcommand(:home) {
-#   HomeSubcommand.run(MainCommand.args)
+#   HomeSubcommand.run
 # }
 
 

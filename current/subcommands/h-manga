@@ -3,7 +3,7 @@
 # end
 
 # MainCommand.register_subcommand(:manga) {
-#   MangaSubcommand.run(MainCommand.args)
+#   MangaSubcommand.run
 # }
 
 

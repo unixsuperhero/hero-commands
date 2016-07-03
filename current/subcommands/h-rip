@@ -92,7 +92,7 @@ class RipSubcommand
 end
 
 MainCommand.register_subcommand(:rip) {
-  RipSubcommand.run(MainCommand.args)
+  RipSubcommand.run
 }
 
 class RipperPlugin

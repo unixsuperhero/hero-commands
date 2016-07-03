@@ -45,7 +45,7 @@ class TipSubcommand
 end
 
 MainCommand.register_subcommand(:tip) {
-  TipSubcommand.run(MainCommand.args)
+  TipSubcommand.run
 }
 
 # vim: ft=ruby

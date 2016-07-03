@@ -82,7 +82,7 @@ class BanditSubcommand
 end
 
 MainCommand.register_subcommand(:bandit) {
-  BanditSubcommand.run(MainCommand.args)
+  BanditSubcommand.run
 }
 
 

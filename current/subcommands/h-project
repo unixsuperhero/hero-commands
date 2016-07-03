@@ -346,7 +346,7 @@ class ProjectSubcommand
 end
 
 MainCommand.register_subcommand(:project) {
-  ProjectSubcommand.run(MainCommand.args)
+  ProjectSubcommand.run
 }
 
 # vim: ft=ruby

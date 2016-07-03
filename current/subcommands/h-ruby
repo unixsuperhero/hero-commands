@@ -33,7 +33,7 @@ class RubySubcommand
 end
 
 MainCommand.register_subcommand(:ruby) {
-  RubySubcommand.run(MainCommand.args)
+  RubySubcommand.run
 }
 
 # vim: ft=ruby

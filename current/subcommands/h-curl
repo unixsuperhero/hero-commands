@@ -72,7 +72,7 @@ class CurlSubcommand
 end
 
 MainCommand.register_subcommand(:curl) {
-  CurlSubcommand.run(MainCommand.args)
+  CurlSubcommand.run
 }
 
 
