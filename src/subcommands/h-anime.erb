@@ -232,9 +232,9 @@ module FindPatternsInFilenames
     #   return args.options
     # end
 
-    subdir = args.shift
-    basedir = args.shift
-    parser = DirectoryParser.new(basedir || Dir.pwd, subdir || 'file_groups')
+    # subdir = args.shift
+    # basedir = args.shift
+    parser = DirectoryParser.new(Dir.pwd, 'file_groups')
     parser.parse
     parser.save_script
     parser.edit_script
