@@ -9,7 +9,8 @@ class Git
 
     def path_to_root
       return '.' unless inside_repo?
-      `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+      root = `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+      root = './' if root.empty?
     end
 
     def absolute_root_path
