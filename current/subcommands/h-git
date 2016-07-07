@@ -1,5 +1,103 @@
 #!/usr/bin/env ruby
 
+class Git
+  class << self
+    def inside_repo?
+      system(*'git rev-parse --show-cdup'.shellsplit, [:out, :err] => '/dev/null')
+      # return true if `git rev-parse --is-inside-work-tree`[/true/]
+      # return true if `git rev-parse --is-inside-git-dir`[/true/]
+      # false
+    end
+
+    def path_to_root
+      return '.' unless inside_repo?
+      `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def absolute_root_path
+      return '.' unless inside_repo?
+      `git rev-parse --show-toplevel`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_root_path
+      return false unless inside_repo?
+      Dir.chdir(path_to_root)
+    end
+
+    def path_to_git_dir
+      return '.' unless inside_repo?
+      `git rev-parse --git-dir`.lines.first.chomp.sub(%r{/*$}, '')
+    end
+
+    def cd_to_git_dir
+      return false unless inside_repo?
+      Dir.chdir(path_to_git_dir)
+    end
+
+    def current_head
+      return false  unless inside_repo?
+      head = `git symbolic-ref HEAD`.lines.first.chomp
+      head.sub(%r{^refs/heads/}, '')
+    end
+
+    def heads_dir
+      File.join(path_to_git_dir, 'refs/heads')
+    end
+
+    def heads
+      pwd = Dir.pwd
+      Dir.chdir heads_dir
+
+      Dir['**/*'].select{|f|
+        File.file?(f)
+      }.tap{
+        Dir.chdir(pwd)
+      }
+    end
+    def current_branch
+      `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
+    end
+
+    def status
+      `git status -s`.lines.flat_map{|line|
+        line.chomp.sub(/.../,'').split(/\s+->\s+/)
+      }.uniq
+    end
+
+    def branches
+      `git branch`.lines.flat_map{|line|
+        line.split(/\s+/).select{|b| b[/\w/] }
+      }.uniq
+    end
+
+    def branch_parts(branch=current_branch)
+      parts = branch.split(?/)
+      base = parts.pop
+      prefix = parts.join(?/)
+      DotHash.new({base: base,
+                      has_prefix: parts.count > 0,
+                      prefix: parts.join(?/)})
+    end
+
+    def branch_base
+      branch_parts.base
+    end
+
+    def branch_has_prefix?
+      branch_parts.has_prefix
+    end
+
+    def branch_prefix
+      branch_parts.prefix
+    end
+  end
+end
+
+
+# vim: ft=ruby
+
+require 'tempfile' unless Object.const_defined?(:Tempfile)
+
 class DotHash
   class << self
     def for(file)
@@ -60,98 +158,98 @@ class DotHash
 end
 
 
-class Git
-  class << self
-    def inside_repo?
-      return true if `git rev-parse --is-inside-work-tree`[/true/]
-      return true if `git rev-parse --is-inside-git-dir`[/true/]
-      false
-    end
+# class Git
+#   class << self
+#     def inside_repo?
+#       return true if `git rev-parse --is-inside-work-tree`[/true/]
+#       return true if `git rev-parse --is-inside-git-dir`[/true/]
+#       false
+#     end
 
-    def path_to_root
-      return '.' unless inside_repo?
-      `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
-    end
+#     def path_to_root
+#       return '.' unless inside_repo?
+#       `git rev-parse --show-cdup`.lines.first.chomp.sub(%r{/*$}, '')
+#     end
 
-    def absolute_root_path
-      return '.' unless inside_repo?
-      `git rev-parse --show-toplevel`.lines.first.chomp.sub(%r{/*$}, '')
-    end
+#     def absolute_root_path
+#       return '.' unless inside_repo?
+#       `git rev-parse --show-toplevel`.lines.first.chomp.sub(%r{/*$}, '')
+#     end
 
-    def cd_to_root_path
-      return false unless inside_repo?
-      Dir.chdir(path_to_root)
-    end
+#     def cd_to_root_path
+#       return false unless inside_repo?
+#       Dir.chdir(path_to_root)
+#     end
 
-    def path_to_git_dir
-      return '.' unless inside_repo?
-      `git rev-parse --git-dir`.lines.first.chomp.sub(%r{/*$}, '')
-    end
+#     def path_to_git_dir
+#       return '.' unless inside_repo?
+#       `git rev-parse --git-dir`.lines.first.chomp.sub(%r{/*$}, '')
+#     end
 
-    def cd_to_git_dir
-      return false unless inside_repo?
-      Dir.chdir(path_to_git_dir)
-    end
+#     def cd_to_git_dir
+#       return false unless inside_repo?
+#       Dir.chdir(path_to_git_dir)
+#     end
 
-    def current_head
-      return false  unless inside_repo?
-      head = `git symbolic-ref HEAD`.lines.first.chomp
-      head.sub(%r{^refs/heads/}, '')
-    end
+#     def current_head
+#       return false  unless inside_repo?
+#       head = `git symbolic-ref HEAD`.lines.first.chomp
+#       head.sub(%r{^refs/heads/}, '')
+#     end
 
-    def heads_dir
-      File.join(path_to_git_dir, 'refs/heads')
-    end
+#     def heads_dir
+#       File.join(path_to_git_dir, 'refs/heads')
+#     end
 
-    def heads
-      pwd = Dir.pwd
-      Dir.chdir heads_dir
+#     def heads
+#       pwd = Dir.pwd
+#       Dir.chdir heads_dir
 
-      Dir['**/*'].select{|f|
-        File.file?(f)
-      }.tap{
-        Dir.chdir(pwd)
-      }
-    end
+#       Dir['**/*'].select{|f|
+#         File.file?(f)
+#       }.tap{
+#         Dir.chdir(pwd)
+#       }
+#     end
 
-    def current_branch
-      `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
-    end
+#     def current_branch
+#       `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
+#     end
 
-    def status
-      `git status -s`.lines.flat_map{|line|
-        line.chomp.sub(/.../,'').split(/\s+->\s+/)
-      }.uniq
-    end
+#     def status
+#       `git status -s`.lines.flat_map{|line|
+#         line.chomp.sub(/.../,'').split(/\s+->\s+/)
+#       }.uniq
+#     end
 
-    def branches
-      `git branch`.lines.flat_map{|line|
-        line.split(/\s+/).select{|b| b[/\w/] }
-      }.uniq
-    end
+#     def branches
+#       `git branch`.lines.flat_map{|line|
+#         line.split(/\s+/).select{|b| b[/\w/] }
+#       }.uniq
+#     end
 
-    def branch_parts(branch=current_branch)
-      parts = branch.split(?/)
-      base = parts.pop
-      prefix = parts.join(?/)
-      DotHash.new({base: base,
-                      has_prefix: parts.count > 0,
-                      prefix: parts.join(?/)})
-    end
+#     def branch_parts(branch=current_branch)
+#       parts = branch.split(?/)
+#       base = parts.pop
+#       prefix = parts.join(?/)
+#       DotHash.new({base: base,
+#                       has_prefix: parts.count > 0,
+#                       prefix: parts.join(?/)})
+#     end
 
-    def branch_base
-      branch_parts.base
-    end
+#     def branch_base
+#       branch_parts.base
+#     end
 
-    def branch_has_prefix?
-      branch_parts.has_prefix
-    end
+#     def branch_has_prefix?
+#       branch_parts.has_prefix
+#     end
 
-    def branch_prefix
-      branch_parts.prefix
-    end
-  end
-end
+#     def branch_prefix
+#       branch_parts.prefix
+#     end
+#   end
+# end
 
 class GitSubcommand
   include ShellCommandable
@@ -173,6 +271,24 @@ class GitSubcommand
 
   dynamic_subcommand {
     HeroHelper.output_from('git', subcommand_arg, *args)
+  }
+
+  register_subcommand(:ignore){
+    if Git.inside_repo?
+      ignore_file = File.join(Git.path_to_root, '.gitignore')
+      tf = Tempfile.new('h_git')
+      head = `git status -s | sed 's/^...//;s/.* -> //'`
+      head += "\n\n# ---- current .gitignore starts here ----\n\n"
+      head += (ignore_before = IO.read(ignore_file))
+      IO.write(tf.path, head)
+      system(ENV['EDITOR'] || 'vim', tf.path)
+      new_ignore = IO.read(tf.path)
+      if new_ignore == ignore_before
+        puts "ignore file did not change"
+      else
+        IO.write(ignore_file, new_ignore)
+      end
+    end
   }
 
   register_subcommand(:current_branch){
