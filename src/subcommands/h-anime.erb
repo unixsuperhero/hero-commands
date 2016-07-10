@@ -3,51 +3,62 @@
 class AnimeSubcommand
   include ShellCommandable
 
-  class << self
-    def downloads_dir
-      File.join(Dir.home, 'Downloads', 'finished')
+  let(:downloads_dir) {
+    File.join(Dir.home, 'Downloads', 'finished')
+  }
+
+  let(:series_info) {
+    series_paths = Dir[File.join(downloads_dir, '*')].select(&File.method(:directory?))
+    series_paths.inject({}){|info,dir| info.merge( File.basename(dir) => dir ) }
+  }
+
+  let(:series_names) {
+    series_info.keys
+  }
+
+  let(:series_matching_first_arg) {
+    return {} if args.empty?
+    @series_matching_arg ||= Proc.new{
+      pattern = Regexp.new(args.first, ?i)
+      series_info.select{|sname,sdir| sname[pattern] }
+    }.call
+  }
+
+  let(:cd_if_series_matches_arg) {
+    return if args.empty?
+
+    matching_series = series_matching_first_arg # series_info.select{|sname,sdir| sname[pattern] }
+
+    if matching_series.count != 1
+      puts
+      puts format('Pattern, "%s", unable to uniquely match a series:', pattern)
+      puts format('  %s', matching_series.keys.join("\n  "))
+      puts
+      exit 1
     end
 
-    def series_info
-      series_paths = Dir[File.join(downloads_dir, '*')].select(&File.method(:directory?))
-      series_paths.inject({}){|info,dir| info.merge( File.basename(dir) => dir ) }
-    end
+    dir = matching_series.values.first
+    exit 1 unless dir && File.directory?(dir)
 
-    def series_names
-      series_info.keys
-    end
+    Dir.chdir(dir)
+  }
 
-    def series_matching_first_arg
-      return {} if args.empty?
-      @series_matching_arg ||= Proc.new{
-        pattern = Regexp.new(args.first, ?i)
-        series_info.select{|sname,sdir| sname[pattern] }
-      }.call
-    end
-
-    def cd_if_series_matches_arg
-      return if args.empty?
-
-      matching_series = series_matching_first_arg # series_info.select{|sname,sdir| sname[pattern] }
-
-      if matching_series.count != 1
-        puts
-        puts format('Pattern, "%s", unable to uniquely match a series:', pattern)
-        puts format('  %s', matching_series.keys.join("\n  "))
-        puts
-        exit 1
-      end
-
-      dir = matching_series.values.first
-      exit 1 unless dir && File.directory?(dir)
-
-      Dir.chdir(dir)
-    end
-  end
+  let(:grep_file) { 'watched.grep' }
 
   register_subcommand(:cdtest){
     cd_if_series_matches_arg
     exit 0
+  }
+
+  register_subcommand(:prep){
+    HeroHelper.run_inside_dir(downloads_dir) {
+      Dir.glob('*').select{|fn| File.directory?(fn) }.reject{|dir|
+        File.exist? File.join(dir, grep_file)
+      }.each{|dir|
+        outfile = File.join(dir, grep_file)
+        IO.write(outfile, "watched.grep\n") unless File.exist?(outfile)
+      }.tap{|dirs| puts dirs }
+    }
   }
 
   register_subcommand(:project_context){
