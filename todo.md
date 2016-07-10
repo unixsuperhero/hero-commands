@@ -1,6 +1,10 @@
 
 # Hero Commands
 
+- separate the code that initiates the command processing from the code/files
+  that contain the ShellCommandable classes.
+- add a `register_gateway` DSL to skip arg processing, etc.  just shift off the
+  susbcommand and pass the remaining args.
 - implement GetoptLong-clone without raising exceptions
 - move everything from `Dir.home` into a shared subdirectory
 - identify all the constants (lib/(s)) used by every file, and make sure to
