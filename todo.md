@@ -1,7 +1,13 @@
 
 # Hero Commands
 
-- add an `h tmux overview` subcommand to `h-tmux`
+- add an `h tmux overview` subcommand to `h-tmux`, it will print out lots of
+  detailed info like:
+  - list of sessions
+    - windows in each session
+      - panes in each window
+  - list of buffers
+- add an `h-dot` subcommand for managing dotfiles.
 - add groups as a keyword arg to `register_subcommand`
 - separate the code that initiates the command processing from the code/files
   that contain the ShellCommandable classes.  in other words,
