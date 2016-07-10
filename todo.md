@@ -3,6 +3,8 @@
 
 - implement GetoptLong-clone without raising exceptions
 - move everything from `Dir.home` into a shared subdirectory
+- identify all the constants (lib/(s)) used by every file, and make sure to
+  `inject` them.
 - change the substitutes with the branch list.  for links, we want to keep the
   left side
 - **managing args and modifiers**
