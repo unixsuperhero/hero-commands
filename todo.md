@@ -2,7 +2,11 @@
 # Hero Commands
 
 - separate the code that initiates the command processing from the code/files
-  that contain the ShellCommandable classes.
+  that contain the ShellCommandable classes.  in other words,
+  - have a file that loads all the libs
+  - loads the subcommand classes as needed
+  - and only runs MainCommand.run if no other command is set to run
+    - if another command is set to run...skip MainCommand altogether.
 - add a `register_gateway` DSL to skip arg processing, etc.  just shift off the
   susbcommand and pass the remaining args.
 - implement GetoptLong-clone without raising exceptions
