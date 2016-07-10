@@ -1,6 +1,8 @@
 
 # Hero Commands
 
+- change the substitutes with the branch list.  for links, we want to keep the
+  left side
 - **managing args and modifiers**
   - the managing of args and modifiers should probably be handled outside the
     context of specific commands/subcommands/blocks
