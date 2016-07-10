@@ -8,7 +8,7 @@
   - and only runs MainCommand.run if no other command is set to run
     - if another command is set to run...skip MainCommand altogether.
 - add a `register_gateway` DSL to skip arg processing, etc.  just shift off the
-  susbcommand and pass the remaining args.
+  subcommand and pass the remaining args.
 - implement GetoptLong-clone without raising exceptions
 - move everything from `Dir.home` into a shared subdirectory
 - identify all the constants (lib/(s)) used by every file, and make sure to
