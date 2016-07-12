@@ -5,6 +5,7 @@
     'src/lib/project_helper.rb.erb',
     'src/lib/hero_helper.rb.erb',
     'src/lib/process_list.rb.erb',
+    'src/lib/option_set_container.rb.erb',
   )
 %>
 
@@ -378,9 +379,33 @@ module ShellCommandable
       names.each{|name| subcommands.merge!( name.to_s => block ) }
     end
 
+    def option_sets
+      @option_sets ||= {}
+    end
+
     def load_subcommands_by_prefix(prefix)
       Dir[File.join(Dir.home, 'subcommands', format('%s-*', prefix))].each do |subcmd|
         load subcmd
+      end
+    end
+
+    class OptionSet
+      class << self
+        def from_name(name)
+          new(name)
+        end
+      end
+
+      attr_accessor :name, :options
+      attr_accessor :toggle_options, :value_options_with_defaults, :value_options
+      def initialize(name)
+        @name = name
+        @toggle_options = {}
+        @value_options_with_defaults = {}
+        @value_options = {}
+      end
+
+      def add_option(name, *matchers, &block)
       end
     end
   end

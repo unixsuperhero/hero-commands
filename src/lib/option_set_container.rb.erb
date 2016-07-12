@@ -1,0 +1,28 @@
+
+<%=
+  inject_files(
+    'src/lib/option_container.rb.erb',
+  )
+%>
+
+class OptionSet < Value
+  class << self
+    def from_name(name, &setup)
+      new(name, &setup)
+    end
+  end
+
+  attr_accessor :name, :setup
+  def initialize(name, &setup)
+    @name, @setup = name, setup
+
+    setup.call(self)
+  end
+
+  def add_toggle(*matchers, setting: :NOT_SET, &handler)
+  end
+end
+
+
+
+
