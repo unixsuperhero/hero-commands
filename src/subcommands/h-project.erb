@@ -133,14 +133,14 @@ class ProjectSubcommand
   end
 
   register_subcommand :add do
-    projects = Config.new(File.join(ENV['HOME'],'projects.yml'))
-
     name,path,other = args
-    projects['projects'].push({
-      'name' => name,
-      'path' => path || Dir.pwd
-    })
-    projects.save
+    name ||= File.basename(Dir.pwd)
+    path ||= Dir.pwd
+    puts
+    puts format('Saving: %s', path)
+    puts format('As: %s', name)
+    config.data.merge!(name => path)
+    puts config.save
   end
 
   register_subcommand :issues do
