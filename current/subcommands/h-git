@@ -317,7 +317,7 @@ class GitSubcommand
 
   register_subcommand(:link_branch, :alias, :ln){
     error_exit('pwd, "%s", is not inside a git repo' % Dir.pwd) unless Git.inside_repo?
-    from,to = args
+    from,to = args.first(2)
 
     error_exit('the new branch name is a required argument') if args.empty?
 
@@ -336,6 +336,9 @@ class GitSubcommand
     puts format('Command: "%s"', cmd)
 
     puts format('Command: "%s" => to show new alias was created', 'git branch')
+    system cmd
+    system 'git', 'branch'
+    [to]
   }
 
   register_subcommand(:root_dir) {

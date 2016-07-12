@@ -3,24 +3,64 @@
 
 
 class Value
-  attr_reader :default
-  def initialize(hash, default: nil)
-    merge hash
-    @default = default
+  attr_reader :to_h
+
+  def initialize(hash)
+    @to_h = {}
+    merge(hash)
   end
 
   def merge(hash)
-    singleton.send(:attr_accessor, *hash.keys.map(&:to_sym))
-    hash.each{|k,v| instance_variable_set("@#{k}", v) }
+    self.tap{|this|
+      @to_h.merge!(hash)
+      hash.each{|k,v|
+        define_singleton_method(k){ v }
+
+        define_singleton_method("#{k}="){|new_v|
+          @to_h.merge!(k => new_v)
+          define_singleton_method(k){ new_v }
+        }
+      }
+    }
   end
   alias_method :update, :merge
 
-  def method_missing(name, *args)
-    (default.is_a?(Numeric) || default.is_a?(NilClass)) ? default : default.dup
+  def delete(k)
+    self.tap{|this|
+      @to_h.delete(k)
+      instance_eval(format("undef %s", k)) if respond_to?(k)
+      instance_eval(format("undef %s=", k)) if respond_to?(k.to_s + ?=)
+    }
+  end
+  alias_method :unset, :delete
+
+  def set(k, v)
+    merge(k => v)
   end
 
-  private def singleton
-    instance_eval('class << self; self; end')
+  def get(k)
+    to_h[k]
+  end
+
+  def has?(k)
+    respond_to?(k)
+  end
+
+  def method_missing(name, *args)
+    super unless @to_h.respond_to?(name)
+
+    @to_h.send(name, *args)
+  end
+
+  def [](key)
+    get(key)
+  end
+
+  def []=(key,val)
+    val.tap{
+      @to_h.merge! key => val
+      define_singleton_method(key){ val }
+    }
   end
 end
 
@@ -871,6 +911,71 @@ class ProcessList
 end
 
 
+class Option < Value
+  class << self
+    def matchable_options_from_args(args)
+      args.select{|arg|
+        arg[0] == ?-
+      }.flat_map{|arg|
+        arg[0,2] == '--' ? arg.sub(/=.*/, '') : arg.sub(/^-/, '').sub(/=.*/, '').chars.map{|c| ?- + c }
+      }
+    end
+  end
+
+  def toggle?
+    type == :toggle
+  end
+
+  def optional_value?
+    type == :optional_value
+  end
+
+  def required_value?
+    type == :required_value
+  end
+
+  def used?(args)
+    opt_args = option_args_for(args)
+    matchers.any?{|m| opt_args.include?(m) }
+  end
+
+  def option_args_for(args)
+    args.select{|arg|
+      arg[0] == ?-
+    }.flat_map{|arg|
+      arg[0,2] == '--' ? arg.sub(/=.*/, '') : arg.sub(/^-/, '').sub(/=.*/, '').chars.map{|c| ?- + c }
+    }
+  end
+
+  def process(settings)
+    handler.call(settings)
+  end
+end
+
+
+class OptionSet < Value
+  class << self
+    def from_name(name, &setup)
+      new(name, &setup)
+    end
+  end
+
+  attr_accessor :name, :setup
+  def initialize(name, &setup)
+    @name, @setup = name, setup
+
+    setup.call(self)
+  end
+
+  def add_toggle(*matchers, setting: :NOT_SET, &handler)
+  end
+end
+
+
+
+
+
+
 module ShellCommandable
   def self.included(base)
     base.extend(ClassMethods)
@@ -1241,9 +1346,33 @@ module ShellCommandable
       names.each{|name| subcommands.merge!( name.to_s => block ) }
     end
 
+    def option_sets
+      @option_sets ||= {}
+    end
+
     def load_subcommands_by_prefix(prefix)
       Dir[File.join(Dir.home, 'subcommands', format('%s-*', prefix))].each do |subcmd|
         load subcmd
+      end
+    end
+
+    class OptionSet
+      class << self
+        def from_name(name)
+          new(name)
+        end
+      end
+
+      attr_accessor :name, :options
+      attr_accessor :toggle_options, :value_options_with_defaults, :value_options
+      def initialize(name)
+        @name = name
+        @toggle_options = {}
+        @value_options_with_defaults = {}
+        @value_options = {}
+      end
+
+      def add_option(name, *matchers, &block)
       end
     end
   end
