@@ -32,7 +32,7 @@ class SiteSubcommand
         puts 'extract the github url from these remotes:'
         system('git', 'remote', '-v')
         puts
-        puts 'match found: "%s"' % `git remote -v`[/(?<=github.com[:\/])[^[:space:]]+?(?=[.]git\b)?/i]
+        puts 'match found: "%s"' % `git remote -v`[/(?<=github.com[:\/])[^[:space:]]+(?=[.]git\b)?/i]
         puts
       else
         error_exit 'No page to open with github'
