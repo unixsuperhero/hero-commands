@@ -121,12 +121,9 @@ class SiteSubcommand
   register_subcommand(:github, :gh){
     if args.empty?
       if Git.inside_repo?
-        puts
-        puts 'extract the github url from these remotes:'
-        system('git', 'remote', '-v')
-        puts
-        puts 'match found: "%s"' % `git remote -v`[/(?<=github.com[:\/])[^[:space:]]+(?=[.]git\b)?/i]
-        puts
+        clean_url = `git remote -v`[/(?<=github.com[:\/])[^[:space:]]+/i].sub(/[.]git$/, '')
+        puts "opening github page for => '%s'" % clean_url
+        system('open', 'http://github.com/%s' % clean_url)
       else
         error_exit 'No page to open with github'
       end
