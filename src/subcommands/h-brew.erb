@@ -1,37 +1,52 @@
+<%= inject_files('src/lib/helpers.rb.erb',
+                 'src/lib/brew_helper.rb.erb') %>
+
 class BrewSubcommand
   include ShellCommandable
 
   register_subcommand(:install){
     if args.empty?
-      BrewHelper.pending.each do |keg|
-        installer = BrewHelper.install(keg)
+      Helpers.brew.pending.map do |keg|
+        Helpers.brew.install(keg)
+      end
+    else
+      args.map do |keg|
+        Helpers.brew.install(keg)
       end
     end
   }
 
 
   register_subcommand(:list){
-    # ... put code here ...
+    Helpers.brew.list.tap(&method(:puts))
   }
 
 
   register_subcommand(:pending){
-    # ... put code here ...
+    Helpers.brew.pending.tap(&method(:puts))
   }
 
 
   register_subcommand(:installed){
-    # ... put code here ...
+    Helpers.brew.installed.tap(&method(:puts))
   }
 
 
   register_subcommand(:edit){
-    # ... put code here ...
+    HeroHelper.edit_in_editor(Helpers.brew.brewfile)
   }
 
 
   register_subcommand(:add){
-    # ... put code here ...
+    IO.write(Helpers.brew.brewfile, '') unless File.exist?(Helpers.brew.brewfile)
+    lines = IO.readlines(Helpers.brew.brewfile).map(&:strip)
+
+    if args.any?
+      lines += args.flatten.map(&:strip)
+      IO.write(Helpers.brew.brewfile, lines.join("\n"))
+    else
+      error_exit 'Please provide some kegs in the args to add to the Brewfile'
+    end
   }
 
 end
