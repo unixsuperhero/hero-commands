@@ -95,3 +95,51 @@ end
 
 
 # vim: ft=ruby
+
+
+class SiteSubcommand
+  include ShellCommandable
+
+  register_subcommand(:google){
+    query = args.join(" ")
+    encoded_query = URI.encode(query)
+    url = format('http://google.com/search?q=%s', encoded_query)
+    HeroHelper.exec_from('open', url)
+  }
+
+
+  register_subcommand(:jisho){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:jp){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:github, :gh){
+    if args.empty?
+      if Git.inside_repo?
+        puts
+        puts 'extract the github url from these remotes:'
+        system('git', 'remote', '-v')
+        puts
+      else
+        error_exit 'No page to open with github'
+      end
+    else
+      args.each do |url|
+        clean_url = url.sub(/^.*?github[.]com\/?/i, '').sub(/[.]git$/i, '')
+        puts "opening github page for => '%s'" % clean_url
+        system('open', 'http://github.com/%s' % clean_url)
+      end
+    end
+  }
+end
+
+MainCommand.register_subcommand(:site, :web, :www, :browser) {
+  SiteSubcommand.run
+}
+
+# vim: ft=ruby
