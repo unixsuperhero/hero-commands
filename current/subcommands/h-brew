@@ -1,0 +1,43 @@
+class BrewSubcommand
+  include ShellCommandable
+
+  register_subcommand(:install){
+    if args.empty?
+      BrewHelper.pending.each do |keg|
+        installer = BrewHelper.install(keg)
+      end
+    end
+  }
+
+
+  register_subcommand(:list){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:pending){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:installed){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:edit){
+    # ... put code here ...
+  }
+
+
+  register_subcommand(:add){
+    # ... put code here ...
+  }
+
+end
+
+MainCommand.register_subcommand(:brew) {
+  BrewSubcommand.run
+}
+
+# vim: ft=ruby
