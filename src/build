@@ -128,6 +128,44 @@ class CommandTemplate
     }.compact.join("\n")
   end
 
+  def simplify(file=@file)
+    file.strip.sub(%r{^(src/)}, '').sub(%r{([.]erb)$}, '')
+  end
+
+  def srcify(file=@file)
+    simplified = simplify(file)
+    with_erb = format('src/%s.erb', simplified)
+    without_erb = format('src/%s', simplified)
+
+    if File.exist?(with_erb)
+      with_erb
+    elsif File.exist?(without_erb)
+      without_erb
+    else
+      with_erb
+    end
+  end
+
+  def inject_src_files(*files)
+    files.flatten.map{|filename|
+      src_file = srcify(filename)
+      ap(simplified: simplify(filename), srcified: src_file, src_exists: File.exist?(src_file))
+
+      unless File.exist?(src_file)
+        puts format('File in src/ does not exist: "%s" -> original file: "%s"', src_file, filename)
+        next
+      end
+
+      if injected_files.include?(src_file)
+        puts format('Already injected: "%s"', src_file)
+        next
+      end
+
+      injected_files.push(src_file)
+      render(src_file)
+    }.compact.join("\n")
+  end
+
   def injected_files
     @injected_files ||= []
   end
