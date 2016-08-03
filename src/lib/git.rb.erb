@@ -53,6 +53,7 @@ class Git
         Dir.chdir(pwd)
       }
     end
+
     def current_branch
       `git rev-parse --symbolic-full-name HEAD`.chomp.split(?/,3).last
     end
