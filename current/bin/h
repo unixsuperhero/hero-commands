@@ -498,7 +498,8 @@ class ProjectHelper
         this.data.map{|k,v|
           expanded_path = File.expand_path(v)
           dug = this.instance_variable_get(:@data)
-          dug = dug.dig(*this.data_path)
+          # dug.dig(*this.data_path)
+          dug = this.data_path.inject(dug){|h,k| h[k] ||= {} }
           dug.merge!(k => expanded_path)
         }
       }
@@ -509,7 +510,8 @@ class ProjectHelper
         this.data.map{|k,v|
           relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '~\2/').sub(%r{//+}, ?/)
           dug = this.instance_variable_get(:@data)
-          dug = dug.dig(*this.data_path)
+          # dug = dug.dig(*this.data_path)
+          dug = this.data_path.inject(dug){|h,k| h[k] ||= {} } # dug.dig(*this.data_path)
           dug.merge!(k => relative_path)
         }
       }
