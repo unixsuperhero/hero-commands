@@ -477,7 +477,7 @@ class GitSubcommand
     }
 
     branches = ListFilter.run(branches, *args) {|name,aliases|
-      record.flatten.join(', ')
+      aliases.unshift(name).flatten.join(', ')
     } if args.any?
 
     exit 1 if branches.empty?
