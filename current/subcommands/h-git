@@ -476,7 +476,7 @@ class GitSubcommand
       h.merge(name => h.fetch(name, []) + aliases)
     }
 
-    branches = ListFilter.run(branches, *args) {|record|
+    branches = ListFilter.run(branches, *args) {|name,aliases|
       record.flatten.join(', ')
     } if args.any?
 
