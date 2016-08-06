@@ -479,11 +479,20 @@ class GitSubcommand
     ap branches: branches
     exit 0
 
-    branches = ListFilter.run(branches, *args) if args.any?
+    branches = ListFilter.run(branches, *args) {|record|
+      record.flatten.join(', ')
+    } if args.any?
 
     exit 1 if branches.empty?
 
-    branches.tap{|b| puts b }
+    branches.tap{|b|
+      b.each do |name,aliases|
+        puts name
+        aliases.each do |al|
+          puts format('  %s', al)
+        end
+      end
+    }
   }
 end
 
