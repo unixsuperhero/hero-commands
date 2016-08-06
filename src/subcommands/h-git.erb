@@ -5,6 +5,7 @@
     'src/lib/git.rb.erb',
   )
 %>
+
 require 'tempfile' unless Object.const_defined?(:Tempfile)
 
 class DotHash
@@ -376,9 +377,14 @@ class GitSubcommand
 
   register_subcommand(:branch){
 
-    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
-      b.sub(/^../, '').sub(/.* -> /, '')
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).inject({}){|h,b|
+      aliases = b.sub(/^../, '').split(/\s+->\s+/)
+      name = aliases.pop
+      h.merge(name => h.fetch(name, []) + aliases)
     }
+
+    ap branches: branches
+    exit 0
 
     branches = ListFilter.run(branches, *args) if args.any?
 

@@ -22,7 +22,41 @@ class ProjectHelper
       }
     end
 
+    def new_config
+      @project_config ||= Config.new(yaml_file, 'projects').tap{|configuration|
+        configuration.after_read(&config_after_read)
+        configuration.before_save(&config_before_save)
+        configuration.read!
+      }
+    end
+
+    def config_after_read
+      proc{|this|
+        this.data.map{|k,v|
+          expanded_path = File.expand_path(v)
+          dug = this.instance_variable_get(:@data)
+          dug = dug.dig(*this.data_path)
+          dug.merge!(k => expanded_path)
+        }
+      }
+    end
+
+    def config_before_save
+      proc{|this|
+        this.data.map{|k,v|
+          relative_path = v.sub(%r{^(/(?:Users|home)/[^/]+)(/?)}, '~\2/').sub(%r{//+}, ?/)
+          dug = this.instance_variable_get(:@data)
+          dug = dug.dig(*this.data_path)
+          dug.merge!(k => relative_path)
+        }
+      }
+    end
+
     def config
+      return new_config
+
+      # --- THIS CODE IS OLD ---
+      #
       Config.new(yaml_file, 'projects').tap{|configuration|
         configuration.after_read do |this|
           this.data.map{|k,v|
