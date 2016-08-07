@@ -6,10 +6,23 @@ class FixSubcommand
     system "networksetup", "-setairportpower", "en0", "on"
   }
 
-
   register_subcommand(:rbenv, :rails){
-    glob = File.join(Dir.home, 'tmp')
-    system 'ls', '-lAFG', *Dir[glob]
+    fix_file = File.join(Dir.home, '.rbenv_version_fix.zsh')
+    IO.write fix_file, <<-"DATA"
+      #!/bin/zsh
+
+      unset RBENV_VERSION
+      rbenv rehash
+    DATA
+
+    puts
+    puts 'The following command has been placed in your'
+    puts 'clipboard.  Run it in a zsh console:'
+    puts
+    puts '  source %s' % fix_file
+    puts
+
+    Clipboard.copy format('source %s', fix_file.inspect)
   }
 
 end
