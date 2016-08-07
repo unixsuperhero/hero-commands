@@ -1,0 +1,21 @@
+class FixSubcommand
+  include ShellCommandable
+
+  register_subcommand(:wifi){
+    system "networksetup", "-setairportpower", "en0", "off"
+    system "networksetup", "-setairportpower", "en0", "on"
+  }
+
+
+  register_subcommand(:rbenv, :rails){
+    glob = File.join(Dir.home, 'tmp')
+    system 'ls', 'lAFG', *Dir[glob]
+  }
+
+end
+
+MainCommand.register_subcommand(:fix) {
+  FixSubcommand.run
+}
+
+# vim: ft=ruby
