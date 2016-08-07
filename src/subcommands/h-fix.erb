@@ -9,7 +9,7 @@ class FixSubcommand
 
   register_subcommand(:rbenv, :rails){
     glob = File.join(Dir.home, 'tmp')
-    system 'ls', 'lAFG', *Dir[glob]
+    system 'ls', '-lAFG', *Dir[glob]
   }
 
 end
