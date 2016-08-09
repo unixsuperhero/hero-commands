@@ -377,22 +377,25 @@ class GitSubcommand
 
   register_subcommand(:branch){
 
-    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).inject({}){|h,b|
-      aliases = b.sub(/^../, '').split(/\s+->\s+/)
-      name = aliases.pop
-      h.merge(name => h.fetch(name, []) + aliases)
+    aliases = Hash.new{|h,k| h[k] = [] }
+
+    branches = HeroHelper.output_lines_from(*"git branch".shellsplit).map{|b|
+      ln, name = b.sub(/^../, '').split(/\s+->\s+/, 2).map(&:strip)
+      ln, name = name, ln if name.nil?
+      aliases[name] << ln if ln
+      name
     }
 
-    branches = ListFilter.run(branches, *args) {|name,aliases|
-      aliases.unshift(name).flatten.join(', ')
+    branches = ListFilter.run(branches, *args) {|name|
+      [name].concat(aliases[name]).flatten.join(', ')
     } if args.any?
 
     exit 1 if branches.empty?
 
     branches.tap{|b|
-      b.each do |name,aliases|
+      b.each do |name|
         puts name
-        aliases.each do |al|
+        aliases[name].each do |al|
           puts format('  %s', al)
         end
       end
