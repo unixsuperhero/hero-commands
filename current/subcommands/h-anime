@@ -171,7 +171,12 @@ class AnimeSubcommand
   register_subcommand(:queue) {
     Dir.chdir(downloads_dir)
 
-    Dir['*'].select(&File.method(:directory?)).each do |series|
+    has_args = args.count > 0
+    Dir['*'].select{|dir|
+      File.directory?(dir) &&
+        has_args &&
+        args.any?{|arg| dir[Regexp.new(arg, ?i)] }
+    }.each do |series|
       Dir.chdir(series)
       unwatched = `ls -1 | egrep -vf watched.grep`.lines.map(&:chomp)
 
