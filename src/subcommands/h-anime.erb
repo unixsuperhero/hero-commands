@@ -173,10 +173,8 @@ class AnimeSubcommand
 
     has_args = args.count > 0
     Dir['*'].select{|dir|
-      ap(has_args: has_args, args: args, dir: dir)
       if has_args
-        matches_any_args = args.any?{|arg| m=dir[re=Regexp.new(arg, ?i)]; ap(arg: arg, match: m, re: re); m }
-        ap(matches_any_args: matches_any_args, return_value: File.directory?(dir) && matches_any_args)
+        matches_any_args = args.any?{|arg| dir[re=Regexp.new(arg, ?i)] }
         File.directory?(dir) && matches_any_args
       else
         File.directory?(dir)
