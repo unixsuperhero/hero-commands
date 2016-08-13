@@ -173,9 +173,13 @@ class AnimeSubcommand
 
     has_args = args.count > 0
     Dir['*'].select{|dir|
-      File.directory?(dir) &&
-        has_args &&
-        args.any?{|arg| dir[Regexp.new(arg, ?i)] }
+      ap(has_args: has_args, args: args)
+      if has_args
+        File.directory?(dir) &&
+          args.any?{|arg| dir[Regexp.new(arg, ?i)] }
+      else
+        File.directory?(dir)
+      end
     }.each do |series|
       Dir.chdir(series)
       unwatched = `ls -1 | egrep -vf watched.grep`.lines.map(&:chomp)
