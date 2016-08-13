@@ -9,7 +9,7 @@ class ArgumentHelper
   class << self
     attr_reader :original_args
     attr_accessor :project_arg, :project
-    attr_accessor :all_args, :args, :modifier_args
+    attr_accessor :all_args, :args, :modifier_args, :option_args
     attr_accessor :order, :applied_modifiers
 
     def init(list=ARGV.clone)
